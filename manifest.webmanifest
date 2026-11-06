@@ -1,7 +1,7 @@
 {
- "name": "Reservatório NBR 5626",
- "short_name": "NBR 5626",
- "description": "Inspeção e dimensionamento de reservatórios de água fria moldados in loco, NBR 5626:2020",
+ "name": "ROTEIRO TÉCNICO DE INSPEÇÃO EM RESERVATÓRIO PREDIAL - NBR 5626:2020",
+ "short_name": "ROTIRP",
+ "description": "Roteiro técnico de inspeção em reservatório predial conforme a NBR 5626:2020",
  "lang": "pt-BR",
  "start_url": "./",
  "scope": "./",

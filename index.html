@@ -168,6 +168,7 @@ dialog::backdrop{background:rgba(10,25,32,.6)}
 .flag{margin-top:10px;font-size:14px;padding:8px 12px;border-radius:8px;background:var(--bad-soft);color:var(--ink);border-left:4px solid var(--bad)}
 .hint{margin-top:10px;font-size:14px;padding:8px 12px;border-radius:8px;background:var(--brass-soft);border-left:4px solid var(--brass)}
 .hint.tcc{background:var(--panel-2);border-left-color:var(--water)}
+.q.obs textarea{width:100%;margin-top:6px;font:inherit;font-size:15px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);resize:vertical}
 .na{margin-top:8px;font-size:14px;color:var(--ink-soft);font-style:italic}
 .inter{margin-top:12px;border:1.5px solid var(--water);border-radius:var(--r-md);padding:12px 14px;background:var(--panel-2)}
 .inter h4{margin:0 0 4px;font-family:var(--f-head);font-size:18px;font-weight:600}
@@ -429,7 +430,7 @@ const DEFAULTS={
   inp:{tipo:"Apartamento",qAndar:32,andares:10,dias:3,pctSup:40,tManut:12,rtiTab:15,nHid:4,vSup:120000,vInf:120000,
     nSup:4,hSup:2,fSup:0.6,cSup:4,nInf:2,hInf:2,fInf:0.6,cInf:2.5,tRep:6,hBomba:6,vAlim:0.8,dAlim:25,tEsvSup:2,tEsvInf:2,cd:0.61,dminExt:25,dminLimp:32,unid:4,
     qtd:[2,0,0,0,0,2,0,1,2,1,0,1,0]},
-  ans:{sup:{},inf:{}}, done:{sup:{},inf:{}}, inter:{sup:{},inf:{}}, banner:{sup:false,inf:false}, res:"sup"
+  ans:{sup:{},inf:{}}, done:{sup:{},inf:{}}, inter:{sup:{},inf:{}}, obs:{sup:{},inf:{}}, banner:{sup:false,inf:false}, res:"sup"
 };
 
 /* ============ ESTADO (salvo só neste navegador) ============ */
@@ -445,7 +446,7 @@ if(!S){
 }
 const D=JSON.parse(JSON.stringify(DEFAULTS));
 S.proj=Object.assign({},D.proj,S.proj||{});S.inp=Object.assign({},D.inp,S.inp||{});
-["ans","done","inter","banner"].forEach(k=>{S[k]=Object.assign({},D[k],S[k]||{})});
+["ans","done","inter","obs","banner"].forEach(k=>{S[k]=Object.assign({},D[k],S[k]||{})});
 if(!RES[S.res])S.res="sup";
 if(!S.v3){S.done.inf={};S.v3=true}
 if(S.inp.tEsv!=null){S.inp.tEsvSup=S.inp.tEsvInf=S.inp.tEsv;delete S.inp.tEsv}
@@ -530,104 +531,106 @@ const balList=r=>BAL[r];
 const nBal=r=>BAL[r].length;
 const bNome=(B,r)=>B.nome;
 const bDesc=(B,r)=>B.desc;
-const SN=["Sim","Não"];
+const SN=["Sim","Não"],NV=["Sim","Não","Não verificável"];
 const yes=v=>v==="Sim", no=v=>v==="Não";
 /* r: "sup" ou "inf" restringe a pergunta a um reservatório. tcc: proposta do trabalho, só informativa */
 const Q=[
- {id:"q8",b:1,it:"6.5.1.1",t:"O sistema de abastecimento é",o:["Potável","Não potável","Ambos"],conf:v=>v!=="Não potável",
-   nc:"Para água não potável deve ser seguida norma específica. A NBR 5626 trata do sistema de água potável."},
- {id:"q9",b:1,it:"6.5.1.2",t:"Os sistemas potável e não potável são isolados e independentes um do outro?",o:SN,conf:yes,
-   na:A=>A.q8&&A.q8!=="Ambos",naTxt:"Não se aplica. Há apenas um tipo de água.",nc:"Os sistemas devem ser isolados e independentes, sem conexão cruzada."},
- {id:"q10",b:1,r:"inf",it:"6.5.1.1",t:"A ligação com a rede pública atende às exigências da concessionária?",o:SN,conf:yes,nc:"Cumprir os parâmetros exigidos pela concessionária."},
- {id:"q14",b:1,it:"6.5.2.1",t:"O sistema de abastecimento é direto ou indireto?",o:["Indireto","Direto"],conf:v=>v==="Indireto",nc:"Esta verificação considera o abastecimento indireto, com reservação."},
- {id:"q45",b:1,it:"6.5.6.1",t:"Foram analisadas a frequência e a duração das interrupções no cálculo da capacidade total?",o:SN,conf:yes,inter:true,
+ {id:"q8",b:1,r:"inf",it:"6.5.1.1",t:"O reservatório armazena água potável?",o:NV,conf:yes,
+   nc:"Para água não potável deve ser seguida norma específica. A NBR 5626 trata do sistema de água potável.",
+   hint:()=>"Um mesmo reservatório não pode guardar água potável e não potável: o item 6.5.1.2 exige sistemas isolados e independentes."},
+ {id:"q9",b:1,r:"inf",it:"6.5.1.2",t:"Este reservatório está isolado de qualquer sistema de água não potável (poço, reúso ou água de chuva), sem conexão cruzada?",o:NV,conf:yes,
+   hint:()=>"Se a edificação não tiver sistema de água não potável, responda Sim.",nc:"Os sistemas devem ser isolados e independentes, sem conexão cruzada."},
+ {id:"q10",b:1,r:"inf",it:"6.5.1.1",t:"A ligação com a rede pública atende às exigências da concessionária?",o:NV,conf:yes,nc:"Cumprir os parâmetros exigidos pela concessionária."},
+ {id:"q14",b:1,r:"inf",it:"6.5.2.1",t:"O sistema de abastecimento é indireto, com reservação?",o:NV,conf:yes,nc:"Esta verificação considera o abastecimento indireto, com reservação."},
+ {id:"q45",b:1,it:"6.5.6.1",hint:()=>"Pergunte ao encarregado ou à concessionária com que frequência falta água e por quanto tempo. Se o projeto não registrou esse dado, responda Não.",t:"O volume dos reservatórios foi calculado considerando quantas vezes e por quanto tempo falta água da rede pública?",o:NV,conf:yes,inter:true,
    nc:"A capacidade de reservação deve considerar a frequência e a duração das interrupções do abastecimento."},
- {id:"q46",b:1,it:"6.5.6.2",t:"Possui reserva técnica de incêndio neste reservatório?",o:["Sim","Não","Não exigida","Fica no outro reservatório"],conf:v=>v!=="Não",nc:"Prever a reserva técnica de incêndio exigida pelo Corpo de Bombeiros.",
+ {id:"q46",b:1,it:"6.5.6.2",t:"Possui reserva técnica de incêndio neste reservatório?",o:NV,conf:()=>true,
    hint:R=>"Na aba Dimensionamento, a reserva técnica de incêndio é de "+fmt(R.rInc)+" L, calculada pela NT 006 do CBMCE (volume da tabela mais 600 L por hidrante). Ela é somada à reserva de consumo."},
- {id:"q47",b:1,it:"6.5.6.2",t:"A capacidade de consumo atende no mínimo 24 h de consumo normal?",o:SN,conf:yes,hint:R=>"A reserva de consumo calculada equivale a "+fmt(S.inp.dias,1)+" dia(s) de consumo ("+fmt(R.rCons)+" L)."},
- {id:"q48",b:1,it:"6.5.6.3",t:"O período de armazenamento preserva a ação residual do agente desinfetante?",o:SN,conf:yes,
+ {id:"q47",b:1,it:"6.5.6.2",t:"O volume total reservado (inferior + superior), sem a reserva de incêndio, atende no mínimo 24 h de consumo normal?",o:NV,conf:yes,nc:"O volume total, sem a reserva de incêndio, deve atender no mínimo um dia de consumo.",
+   hint:R=>"Consumo normal é o consumo diário da edificação: população × consumo por pessoa, hoje "+fmt(R.cd)+" L/dia. Os 24 h valem para a soma dos dois reservatórios, não para cada um. O volume adotado, sem incêndio, equivale a "+fmt(R.diasArm*24,0)+" h de consumo."},
+ {id:"q48",b:1,it:"6.5.6.3",t:"O tempo que a água fica guardada nos reservatórios (volume total ÷ consumo diário) preserva o cloro residual?",o:NV,conf:yes,
    nc:"Limitar o volume a 3 dias de consumo diário ou prever meios que preservem a potabilidade.",hint:R=>"O volume adotado, sem a reserva de incêndio, equivale a "+fmt(R.diasArm,1)+" dias de consumo. A nota do item 6.5.6.3 recomenda até 3 dias.",
    tcc:"Proposta do TCC (nota 2 ao item 6.5.6.3): determinar o volume pelo consumo efetivo da edificação, considerando as condições climáticas locais."},
- {id:"q53",b:1,r:"inf",it:"6.5.6.7",t:"O volume de consumo do superior supera o demandado durante a limpeza do inferior, permitindo inferior com compartimento único?",o:["Sim","Não","Não se aplica"],conf:v=>v!=="Não",
-   hint:()=>"Responda Não se aplica se o reservatório inferior também for dividido em câmaras."},
- {id:"q69",b:1,it:"6.5.8.3",t:"O nível máximo da água está abaixo da geratriz inferior da tubulação de extravasão?",o:SN,conf:yes},
+ {id:"q53",b:1,r:"inf",it:"6.5.6.7",t:"O reservatório inferior tem compartimento único. O volume do superior abastece o prédio sozinho durante toda a limpeza do inferior?",o:NV,conf:yes,
+   hint:R=>"Se o inferior for dividido em câmaras, responda Sim. Com "+fmt(S.inp.tManut,1)+" h de limpeza, o prédio consome "+fmt(R.cd*S.inp.tManut/24)+" L; o superior tem "+fmt(S.inp.vSup)+" L."},
+ {id:"q69",b:1,it:"6.5.8.3",t:"O nível máximo da água está abaixo da geratriz inferior da tubulação de extravasão?",o:NV,conf:yes},
 
- {id:"q38",b:2,it:"6.5.5.5",t:"Havendo abertura na parede que se comunique com o meio externo, ela está protegida contra insetos, poeira, líquidos e outros animais?",o:SN,conf:yes},
- {id:"q39",b:2,it:"6.5.5.6",t:"O reservatório é de material resistente à corrosão ou possui revestimento anticorrosivo?",o:SN,conf:yes},
- {id:"q40",b:2,it:"6.5.5.6",t:"As paredes deixam de liberar substâncias solúveis na água?",o:SN,conf:yes},
- {id:"q41",b:2,it:"6.5.5.6",t:"As superfícies internas evitam a formação de biofilme?",o:SN,conf:yes},
+ {id:"q38",b:2,it:"6.5.5.5",t:"Havendo abertura na parede que se comunique com o meio externo, ela está protegida contra insetos, poeira, líquidos e outros animais?",o:NV,conf:yes},
+ {id:"q39",b:2,it:"6.5.5.6",t:"As faces internas do concreto têm impermeabilização ou revestimento próprio para água potável, sem armadura exposta, ferrugem ou desplacamento?",o:NV,conf:yes,
+   hint:()=>"Confira na documentação (projeto, ficha técnica ou nota fiscal) o produto aplicado e se é atóxico para água potável. Na vistoria, manchas de ferrugem, fissuras e concreto desplacado indicam corrosão da armadura."},
+ {id:"q40",b:2,it:"6.5.5.6",t:"As paredes permitem liberação de substâncias solúveis na água?",o:NV,conf:no,nc:"As paredes não podem liberar substâncias na água.",
+   hint:()=>"Responda Sim se houver descascamento, eflorescência (manchas ou crostas brancas de sais) ou ferrugem nas paredes ou na face de baixo da laje."},
+ {id:"q41",b:2,it:"6.5.5.6",t:"As superfícies internas estão livres de limo, manchas escuras ou camada viscosa que indiquem biofilme?",o:NV,conf:yes,
+   hint:()=>"Biofilme aparece como película escorregadia ao toque, verde, marrom ou preta, mais comum nos cantos, na linha da água e em superfícies ásperas ou fissuradas."},
 
- {id:"q30",b:3,it:"6.5.5.1",t:"O reservatório é opaco ou protegido contra a incidência de luz?",o:SN,conf:yes,
+ {id:"q30",b:3,it:"6.5.5.1",t:"O reservatório é opaco ou protegido contra a incidência de luz?",o:NV,conf:yes,
    tcc:"Proposta do TCC (subitem 6.5.5.1.1): radiação UV-C pode ser usada como medida complementar, sem expor materiais suscetíveis à degradação e sem dispensar a opacidade e o cloro residual."},
- {id:"q31",b:3,it:"6.5.5.2",t:"É possível constatar visualmente vazamentos em todas as faces, inclusive no fundo?",o:SN,conf:yes},
- {id:"q31i",b:3,r:"inf",it:"6.5.5.2",t:"O reservatório inferior está afastado do solo e do terreno lateral, de modo que o fundo possa ser inspecionado?",o:SN,conf:yes,
-   nc:"Sem acesso ao fundo não é possível constatar vazamentos, como exige o item 6.5.5.2.",
-   tcc:"Proposta do TCC (item 6.5.5.2): altura livre mínima de 2 m entre o fundo do reservatório inferior e o piso sob ele."},
- {id:"q32",b:3,it:"6.5.5.2",t:"É possível reparar vazamentos?",o:SN,conf:yes},
- {id:"q33",b:3,it:"6.5.5.2",t:"Está impedida a contaminação da água por agentes externos?",o:SN,conf:yes},
- {id:"q34",b:3,it:"6.5.5.3",t:"O reservatório é estanque?",o:SN,conf:yes},
- {id:"q49",b:3,r:"sup",it:"6.5.6.5",t:"O reservatório elevado é dividido em dois ou mais compartimentos?",o:SN,conf:yes,hint:R=>"Na aba Dimensionamento o superior tem "+S.inp.nSup+" câmara(s)."},
- {id:"q50",b:3,r:"sup",it:"6.5.6.5",t:"O menor compartimento atende sozinho à demanda do edifício durante a manutenção?",o:SN,conf:yes,hint:R=>"A menor câmara do superior tem "+fmt(R.vmin)+" L, igual à reserva de manutenção ("+fmt(S.inp.tManut,1)+" h de consumo).",
+ {id:"q31",b:3,it:"6.5.5.2",t:"É permitida a constatação visual e o reparo de vazamentos?",o:NV,conf:yes,
+   tcc:"Proposta do TCC (item 6.5.5.2): todas as faces visíveis; reservatório inferior não apoiado no solo nem encostado no terreno, com altura livre mínima de 2,10 m sob o fundo."},
+ {id:"q33",b:3,it:"6.5.5.2",t:"Foi impossibilitada a contaminação da água por agentes externos?",o:NV,conf:yes},
+ {id:"q34",b:3,it:"6.5.5.3",t:"O reservatório é estanque?",o:NV,conf:yes},
+ {id:"q49",b:3,r:"sup",it:"6.5.6.5",t:"O reservatório elevado é dividido em dois ou mais compartimentos?",o:NV,conf:yes,hint:R=>"Na aba Dimensionamento o superior tem "+S.inp.nSup+" câmara(s)."},
+ {id:"q50",b:3,r:"sup",it:"6.5.6.5",t:"O menor compartimento atende sozinho à demanda do edifício durante a manutenção?",o:NV,conf:yes,hint:R=>"A menor câmara do superior tem "+fmt(R.vmin)+" L, igual à reserva de manutenção ("+fmt(S.inp.tManut,1)+" h de consumo).",
    tcc:"Proposta do TCC (item 6.5.6.5): adotar 12 horas como duração de uma operação normal de manutenção."},
- {id:"q54",b:3,it:"6.5.6.8",t:"As câmaras interligadas mantêm a circulação da água por todas elas?",o:["Sim","Não","Não há câmaras interligadas"],conf:v=>v!=="Não"},
- {id:"q58",b:3,it:"6.5.6.8",t:"Há câmaras operando de forma simultânea e exclusiva como vasos comunicantes?",o:SN,conf:no,nc:"O item 6.5.6.8 veda a operação simultânea exclusiva como vasos comunicantes.",
+ {id:"q54",b:3,it:"6.5.6.8",t:"Havendo câmaras interligadas, elas mantêm a circulação da água por todas elas?",o:NV,conf:yes,hint:()=>"Se não houver câmaras interligadas, responda Sim."},
+ {id:"q58",b:3,it:"6.5.6.8",t:"Há câmaras operando de forma simultânea e exclusiva como vasos comunicantes?",o:NV,conf:no,nc:"O item 6.5.6.8 veda a operação simultânea exclusiva como vasos comunicantes.",
    hint:()=>"A Errata 1 de 2020 retirou essa vedação do item 6.5.6.5, mas ela permanece no item 6.5.6.8.",
    tcc:"Proposta do TCC (item 6.5.6.8): exigir registros que permitam isolar cada reservatório interligado sem interromper o abastecimento."},
 
- {id:"q35",b:4,it:"6.5.5.3",t:"A tampa ou porta de acesso é opaca e firmemente presa na sua posição quando fechada?",o:SN,conf:yes,
+ {id:"q35",b:4,it:"6.5.5.3",t:"A tampa ou porta de acesso é opaca e firmemente presa na sua posição quando fechada?",o:NV,conf:yes,
    tcc:"Proposta do TCC (item 6.5.5.3): ressalto perimetral de no mínimo 10 cm acima da cobertura e tampa assentada sobre camada de gesso, sem frestas."},
- {id:"q36",b:4,it:"6.5.5.4",t:"A abertura de acesso está na cobertura?",o:SN,conf:()=>true},
- {id:"q37",b:4,it:"6.5.5.4",t:"Está impedido o ingresso de líquidos e de água não potável pela abertura de acesso?",o:SN,conf:yes,na:A=>A.q36==="Não",naTxt:"Não se aplica. A abertura não está na cobertura."},
- {id:"q62",b:4,it:"6.5.7.1",t:"O reservatório e a tampa cumprem sua função sem deformações que comprometam o funcionamento?",o:SN,conf:yes},
+ {id:"q36",b:4,it:"6.5.5.4",t:"A abertura de acesso está na cobertura?",o:NV,conf:()=>true},
+ {id:"q37",b:4,it:"6.5.5.4",t:"Está impedido o ingresso de líquidos e de água não potável pela abertura de acesso?",o:NV,conf:yes,na:A=>A.q36==="Não",naTxt:"Não se aplica. A abertura não está na cobertura."},
+ {id:"q62",b:4,it:"6.5.7.1",t:"O reservatório e a tampa cumprem sua função sem deformações que comprometam o funcionamento?",o:NV,conf:yes},
 
  {id:"q18",b:5,r:"inf",it:"6.5.3.1",t:"Pressão mínima informada pela concessionária",num:"mca",conf:(v,A)=>+v>0},
  {id:"q19",b:5,r:"inf",it:"6.5.3.1",t:"Pressão máxima informada pela concessionária",num:"mca",conf:(v,A)=>+v>0&&(A.q18==null||+v>=+A.q18),nc:"A pressão máxima deve ser maior ou igual à mínima."},
  {id:"q20",b:5,r:"inf",it:"6.5.3.1",t:"Pressão máxima de trabalho adotada para o alimentador",num:"mca",conf:(v,A)=>+v>0&&(A.q19==null||+v>=+A.q19),nc:"A pressão de trabalho adotada deve ser maior ou igual à pressão máxima da concessionária."},
- {id:"q23",b:5,r:"inf",it:"6.5.3.2",t:"O alimentador predial está enterrado?",o:SN,conf:()=>true},
- {id:"q24",b:5,r:"inf",it:"6.5.3.2",t:"Está afastado horizontalmente de qualquer fonte poluidora?",o:SN,conf:yes,na:A=>A.q23==="Não",naTxt:"Não se aplica. O alimentador não é enterrado."},
- {id:"q25",b:5,r:"inf",it:"6.5.3.2",t:"Está na mesma vala de outra tubulação ou fonte poluidora?",o:SN,conf:()=>true,na:A=>A.q23==="Não",naTxt:"Não se aplica. O alimentador não é enterrado."},
- {id:"q26",b:5,r:"inf",it:"6.5.3.2",t:"A geratriz inferior do alimentador está acima da geratriz superior externa dessas tubulações?",o:SN,conf:yes,na:A=>A.q23==="Não"||A.q25==="Não",naTxt:"Não se aplica. Não há tubulação na mesma vala."},
- {id:"q67",b:5,r:"inf",it:"6.5.8.2",t:"Há registro de fechamento no alimentador predial, a montante e próximo do reservatório?",o:SN,conf:yes},
- {id:"q72",b:5,r:"inf",it:"6.7.2",t:"A vazão do alimentador repõe o consumo diário em até 6 h?",o:SN,conf:yes,hint:R=>"Padrão de entrada adotado com "+dn(R.dal)+". Com velocidade máxima de 3 m/s, ele repõe o consumo diário em "+fmt(R.tRepReal,1)+" h. Para repor em "+fmt(S.inp.tRep,1)+" h seria preciso "+dn(R.dalCalc)+"."},
- {id:"q68",b:5,r:"sup",it:"6.5.8.2",t:"Há registro de fechamento na tubulação de recalque, a montante e próximo do reservatório superior?",o:SN,conf:yes},
- {id:"q71",b:5,r:"sup",it:"6.5.8.2",t:"Há válvula de retenção e registro junto à bomba?",o:SN,conf:yes,hint:R=>"Recalque dimensionado com "+dn(R.drec)+"."},
+ {id:"q23",b:5,r:"inf",it:"6.5.3.2",t:"O alimentador predial está enterrado?",o:NV,conf:()=>true},
+ {id:"q24",b:5,r:"inf",it:"6.5.3.2",t:"Está afastado horizontalmente de qualquer fonte poluidora?",o:NV,conf:yes,na:A=>A.q23==="Não",naTxt:"Não se aplica. O alimentador não é enterrado."},
+ {id:"q25",b:5,r:"inf",it:"6.5.3.2",t:"Está na mesma vala de outra tubulação ou fonte poluidora?",o:NV,conf:()=>true,na:A=>A.q23==="Não",naTxt:"Não se aplica. O alimentador não é enterrado."},
+ {id:"q26",b:5,r:"inf",it:"6.5.3.2",t:"A geratriz inferior do alimentador está acima da geratriz superior externa dessas tubulações?",o:NV,conf:yes,na:A=>A.q23==="Não"||A.q25==="Não",naTxt:"Não se aplica. Não há tubulação na mesma vala."},
+ {id:"q67",b:5,r:"inf",it:"6.5.8.2",t:"Há registro de fechamento no alimentador predial, a montante e próximo do reservatório?",o:NV,conf:yes},
+ {id:"q72",b:5,r:"inf",it:"6.7.2",t:"A vazão do alimentador repõe o consumo diário em até 6 h?",o:NV,conf:yes,hint:R=>"Padrão de entrada adotado com "+dn(R.dal)+". Com velocidade máxima de 3 m/s, ele repõe o consumo diário em "+fmt(R.tRepReal,1)+" h. Para repor em "+fmt(S.inp.tRep,1)+" h seria preciso "+dn(R.dalCalc)+"."},
+ {id:"q68",b:5,r:"sup",it:"6.5.8.2",t:"Há registro de fechamento na tubulação de recalque, a montante e próximo do reservatório superior?",o:NV,conf:yes},
+ {id:"q71",b:5,r:"sup",it:"6.5.8.2",t:"Há válvula de retenção e registro junto à bomba?",o:NV,conf:yes,hint:R=>"Recalque dimensionado com "+dn(R.drec)+"."},
 
- {id:"q51",b:6,r:"sup",it:"6.5.6.5",t:"Cada compartimento possui entrada de água própria e opera como reservatório autônomo?",o:SN,conf:yes},
- {id:"q66",b:6,r:"inf",it:"6.5.8.1",t:"O alimentador predial possui, na extremidade de jusante, torneira de boia ou outro componente automático de controle de admissão e de nível?",o:SN,conf:yes},
- {id:"q66s",b:6,r:"sup",it:"6.5.8.1",t:"A entrada pelo recalque possui controle automático de nível (chave de nível ou boia elétrica) que comanda a bomba?",o:SN,conf:yes},
- {id:"q66b",b:6,it:"6.5.8.1",t:"Esse componente permite ajustar o nível operacional e protege contra o refluxo?",o:SN,conf:yes},
+ {id:"q51",b:6,r:"sup",it:"6.5.6.5",t:"Cada compartimento possui entrada de água própria e opera como reservatório autônomo?",o:NV,conf:yes},
+ {id:"q66",b:6,r:"inf",it:"6.5.8.1",t:"O alimentador predial possui, na extremidade de jusante, torneira de boia ou outro componente automático de controle de admissão e de nível?",o:NV,conf:yes},
+ {id:"q66s",b:6,r:"sup",it:"6.5.8.1",t:"A entrada pelo recalque possui controle automático de nível (chave de nível ou boia elétrica) que comanda a bomba?",o:NV,conf:yes},
+ {id:"q66b",b:6,it:"6.5.8.1",t:"Esse componente permite ajustar o nível operacional e protege contra o refluxo?",o:NV,conf:yes},
 
- {id:"q77",b:7,it:"6.5.9.2",t:"O fundo possui declividade para a tubulação de limpeza?",o:SN,conf:yes},
- {id:"q78",b:7,it:"6.5.9.3",t:"Possui tubulação de extravasão?",o:SN,conf:yes,hint:R=>"Extravasor dimensionado com "+dnTxt(S.res==="sup"?R.dexs:R.dexi)+" neste reservatório."},
- {id:"q79",b:7,it:"6.5.9.4",t:"O diâmetro da extravasão escoa o excesso de água em regime de escoamento livre?",o:SN,conf:yes},
- {id:"q80",b:7,it:"6.5.9.4",t:"A extravasão está protegida contra o bloqueio por partículas flutuantes?",o:SN,conf:yes,
+ {id:"q77",b:7,it:"6.5.9.2",t:"O fundo possui declividade para a tubulação de limpeza?",o:NV,conf:yes},
+ {id:"q78",b:7,it:"6.5.9.3",t:"Possui tubulação de extravasão?",o:NV,conf:yes,hint:R=>"Extravasor dimensionado com "+dnTxt(S.res==="sup"?R.dexs:R.dexi)+" neste reservatório."},
+ {id:"q79",b:7,it:"6.5.9.4",t:"O diâmetro da extravasão escoa o excesso de água em regime de escoamento livre?",o:NV,conf:yes},
+ {id:"q80",b:7,it:"6.5.9.4",t:"A extravasão está protegida contra o bloqueio por partículas flutuantes?",o:NV,conf:yes,
    tcc:"Proposta do TCC (nota ao item 6.5.9.4): captação abaixo do nível de extravasão por meio de tê com ramal de ventilação voltado para cima."},
- {id:"q81",b:7,it:"6.5.9.5",t:"Possui tubulação de aviso de extravasão ou outro meio de alerta?",o:SN,conf:yes},
- {id:"q82",b:7,it:"6.5.9.6",t:"As tubulações de extravasão e aviso têm proteção contra vetores (tela ou malha)?",o:SN,conf:yes},
- {id:"q83",b:7,it:"6.5.9.6",t:"A área de passagem da tela é maior que a seção interna da tubulação?",o:SN,conf:yes},
- {id:"q84",b:7,it:"6.5.9.7",t:"A descarga do aviso é feita em local adequado e prontamente visível?",o:SN,conf:yes},
- {id:"q85",b:7,it:"6.5.9.8",t:"O aviso é derivado da tubulação de extravasão?",o:["Sim","Não","Não há aviso"],conf:v=>v!=="Não"},
- {id:"q86",b:7,it:"6.5.9.8",t:"O aviso fica livre da água vinda da limpeza do reservatório?",o:["Sim","Não","Não há aviso"],conf:v=>v!=="Não"},
- {id:"q87",b:7,it:"6.5.9.9",t:"A tubulação de aviso tem diâmetro suficiente para não ser bloqueada por partículas?",o:["Sim","Não","Não há aviso"],conf:v=>v!=="Não"},
+ {id:"q81",b:7,it:"6.5.9.5",t:"Possui tubulação de aviso de extravasão ou outro meio de alerta?",o:NV,conf:yes},
+ {id:"q82",b:7,it:"6.5.9.6",t:"As tubulações de extravasão e aviso têm proteção contra vetores (tela ou malha)?",o:NV,conf:yes},
+ {id:"q83",b:7,it:"6.5.9.6",t:"A área de passagem da tela é maior que a seção interna da tubulação?",o:NV,conf:yes},
+ {id:"q84",b:7,it:"6.5.9.7",t:"A descarga do aviso é feita em local adequado e prontamente visível?",o:NV,conf:yes},
+ {id:"q85",b:7,it:"6.5.9.8",t:"O aviso é derivado da tubulação de extravasão?",o:NV,conf:yes,na:A=>A.q81==="Não",naTxt:"Não se aplica. Não há aviso de extravasão."},
+ {id:"q86",b:7,it:"6.5.9.8",t:"O aviso fica livre da água vinda da limpeza do reservatório?",o:NV,conf:yes,na:A=>A.q81==="Não",naTxt:"Não se aplica. Não há aviso de extravasão."},
+ {id:"q87",b:7,it:"6.5.9.9",t:"A tubulação de aviso tem diâmetro suficiente para não ser bloqueada por partículas?",o:NV,conf:yes,na:A=>A.q81==="Não",naTxt:"Não se aplica. Não há aviso de extravasão."},
 
- {id:"q73",b:8,it:"6.5.9.1",t:"Há tubulação de limpeza?",o:SN,conf:yes,hint:R=>"Limpeza dimensionada com "+dnTxt(S.res==="sup"?R.dls:R.dli)+" por câmara neste reservatório."},
- {id:"q74",b:8,it:"6.5.9.1",t:"Há registro de fechamento de fácil operação e acesso?",o:SN,conf:yes},
- {id:"q75",b:8,it:"6.5.9.1",t:"Esse registro fica próximo à saída do reservatório?",o:SN,conf:yes},
- {id:"q90",b:8,it:"6.5.9.10",t:"As tubulações de extravasão e limpeza permitem refluxo ao descarregar?",o:SN,conf:no},
- {id:"q91",b:8,it:"6.5.9.10",t:"Há conexão cruzada?",o:SN,conf:no},
- {id:"q92",b:8,it:"6.5.9.10",t:"Descarregam em local com gases ou ar potencialmente contaminados?",o:SN,conf:no},
- {id:"q93",b:8,it:"6.5.9.10",t:"Estão ligadas diretamente à tubulação de esgoto ou de águas pluviais?",o:SN,conf:no},
+ {id:"q73",b:8,it:"6.5.9.1",t:"Há tubulação de limpeza?",o:NV,conf:yes,hint:R=>"Limpeza dimensionada com "+dnTxt(S.res==="sup"?R.dls:R.dli)+" por câmara neste reservatório."},
+ {id:"q74",b:8,it:"6.5.9.1",t:"Há registro de fechamento de fácil operação e acesso?",o:NV,conf:yes},
+ {id:"q75",b:8,it:"6.5.9.1",t:"Esse registro fica próximo à saída do reservatório?",o:NV,conf:yes},
+ {id:"q90",b:8,it:"6.5.9.10",t:"As tubulações de extravasão e limpeza permitem refluxo ao descarregar?",o:NV,conf:no},
+ {id:"q91",b:8,it:"6.5.9.10",t:"Há conexão cruzada?",o:NV,conf:no},
+ {id:"q92",b:8,it:"6.5.9.10",t:"Descarregam em local com gases ou ar potencialmente contaminados?",o:NV,conf:no},
+ {id:"q93",b:8,it:"6.5.9.10",t:"Estão ligadas diretamente à tubulação de esgoto ou de águas pluviais?",o:NV,conf:no},
 
- {id:"q52",b:9,bi:1,it:"6.5.6.6",t:"A posição da entrada e da saída promove a renovação da água e evita zonas de estagnação?",o:SN,conf:yes,
+ {id:"q52",b:9,bi:1,it:"6.5.6.6",t:"A posição da entrada e da saída promove a renovação da água e evita zonas de estagnação?",o:NV,conf:yes,
    hint:R=>S.res==="sup"?"Saída do superior dimensionada com "+dnTxt(R.dsai)+" para "+fmt(R.qs,2)+" L/s.":"No inferior, a saída é a sucção da bomba, com "+dn(R.dsuc)+" e válvula de pé com crivo próxima ao fundo."},
- {id:"q52b",b:9,r:"sup",it:"6.5.6.2",t:"Havendo reserva de incêndio neste reservatório, a tomada de consumo fica acima dela, de modo a preservá-la?",o:["Sim","Não","Não há reserva de incêndio aqui"],conf:v=>v!=="Não",
+ {id:"q52b",b:9,r:"sup",it:"6.5.6.2",t:"Havendo reserva de incêndio neste reservatório, a tomada de consumo fica acima dela, de modo a preservá-la?",o:NV,conf:yes,na:A=>A.q46==="Não",naTxt:"Não se aplica. Não há reserva de incêndio neste reservatório.",
    hint:R=>"O desenho mostra a tomada elevada até a metade da lâmina de água. A reserva de incêndio calculada ocupa "+fmt(R.pctIncSup,0)+"% do volume adotado no superior."},
 
- {id:"q76",b:10,it:"6.5.9.2",t:"O reservatório moldado no local tem cantos internos arredondados ou chanfrados?",o:SN,conf:yes},
- {id:"q98",b:10,it:"6.5.10.1",t:"Permite operação, verificação e manutenção de maneira simples e econômica?",o:SN,conf:yes},
- {id:"q99",b:10,it:"6.5.10.2",t:"O interior é acessado com facilidade, por abertura de dimensão suficiente?",o:SN,conf:yes,
+ {id:"q76",b:10,it:"6.5.9.2",t:"O reservatório moldado no local tem cantos internos arredondados ou chanfrados?",o:NV,conf:yes},
+ {id:"q98",b:10,it:"6.5.10.1",t:"Permite operação, verificação e manutenção de maneira simples e econômica?",o:NV,conf:yes},
+ {id:"q99",b:10,it:"6.5.10.2",t:"O interior é acessado com facilidade, por abertura de dimensão suficiente?",o:NV,conf:yes,
    tcc:"Proposta do TCC (nota ao item 6.5.10.2): abertura mínima de 60 cm em qualquer direção (Carvalho Júnior, 2022)."},
- {id:"q100",b:10,it:"6.5.10.3",t:"O espaço em torno do reservatório é suficiente para a verificação e a manutenção?",o:SN,conf:yes,
+ {id:"q100",b:10,it:"6.5.10.3",t:"O espaço em torno do reservatório é suficiente para a verificação e a manutenção?",o:NV,conf:yes,
    hint:()=>"A NBR 5626:2020 não fixa medida. A NBR 5626:1998 exigia 60 cm e o Secovi-SP e a Abrasip recomendam 50 cm."+(S.res==="inf"?" Para o reservatório inferior, Botelho e Ribeiro Júnior (2014) recomendam folga mínima de 0,80 m entre as paredes e qualquer obstáculo lateral.":""),
    tcc:"Proposta do TCC (item 6.5.10.3): afastamento mínimo de 60 cm nos locais de circulação, verificação e manutenção."}
 ];
@@ -637,6 +640,8 @@ const qsOf=(b,r)=>Q.filter(q=>(!q.r||q.r===r)&&balOf(q,r)===b);
 function status(A,q){
   if(q.na&&q.na(A))return"na";
   const v=A[q.id];if(v==null||v==="")return"pend";
+  if(v==="Não verificável")return"nv";
+  if(v==="Não se aplica")return"na";
   return q.conf(v,A)?"c":"nc";
 }
 function balloonState(b,r){
@@ -704,7 +709,7 @@ const resetBox=document.getElementById("resetBox"),resetAsk=document.getElementB
 function hideReset(){resetBox.hidden=true;resetAsk.hidden=false}
 resetAsk.onclick=()=>{resetBox.hidden=false;resetAsk.hidden=true};
 document.getElementById("resetNo").onclick=hideReset;
-document.getElementById("resetYes").onclick=()=>{const r=S.res;S.ans[r]={};S.done[r]={};S.inter[r]={};S.banner[r]=false;save();hideReset();renderAll();toast("Respostas do "+RES[r]+" apagadas")};
+document.getElementById("resetYes").onclick=()=>{const r=S.res;S.ans[r]={};S.done[r]={};S.inter[r]={};S.obs[r]={};S.banner[r]=false;save();hideReset();renderAll();toast("Respostas do "+RES[r]+" apagadas")};
 
 /* ============ QUESTIONÁRIO ============ */
 const dlg=document.getElementById("qDlg");let curB=null;
@@ -736,7 +741,7 @@ function renderQ(){
     else if(q.num){h+='<div class="num-in"><input type="number" min="0" step="0.1" inputmode="decimal" data-q="'+q.id+'" value="'+(A[q.id]??"")+'" aria-label="'+esc(q.t)+'"><span>'+q.num+'</span></div>'}
     else{
       h+='<div class="opts" role="group" aria-label="'+esc(q.t)+'">'+q.o.map(o=>{
-        const pr=A[q.id]===o,cls=q.conf(o,A)?(/^(Não se aplica|Não exigida|Não há|Fica no outro)/.test(o)?"n":"c"):"nc";
+        const pr=A[q.id]===o,cls=q.conf(o,A)?(/^(Não se aplica|Não verificável|Não há)/.test(o)?"n":"c"):"nc";
         return '<button type="button" class="'+cls+'" aria-pressed="'+pr+'" data-q="'+q.id+'" data-v="'+esc(o)+'">'+esc(o)+'</button>'}).join("")+'</div>';
     }
     if(st==="nc"){h+='<div class="flag">Não conforme'+(q.nc?". "+esc(q.nc):".")+'</div>'}
@@ -745,12 +750,16 @@ function renderQ(){
     if(q.tcc&&st!=="na"){h+='<div class="hint tcc">'+esc(q.tcc)+'</div>'}
     d.innerHTML=h;body.appendChild(d);
   });
+  const ob=document.createElement("div");ob.className="q obs";
+  ob.innerHTML='<label class="item" for="obsTxt">Observações</label><textarea id="obsTxt" data-obs="1" rows="3" placeholder="Anotações de campo sobre este ponto (opcional)">'+esc(S.obs[S.res][curB]||"")+'</textarea>';
+  body.appendChild(ob);
   const bs=balloonState(curB,S.res),cnt=bs.st.filter(s=>s!=="pend").length;
   document.getElementById("qProg").textContent=cnt+" de "+bs.total+" respondidas"+(bs.st.includes("nc")?", há item não conforme":(bs.s==="allc"?", tudo conforme":""));
   const btn=document.getElementById("qDone");btn.disabled=bs.s!=="allc";btn.title=bs.s==="allc"?"":"Todas as respostas precisam estar conformes";
 }
 const qBody=document.getElementById("qBody");
 qBody.addEventListener("click",e=>{const b=e.target.closest("button[data-q]");if(!b)return;S.ans[S.res][b.dataset.q]=b.dataset.v;save();renderQ();renderInsp()});
+qBody.addEventListener("input",e=>{const t=e.target.closest("[data-obs]");if(!t||curB==null)return;const v=t.value;if(v.trim())S.obs[S.res][curB]=v;else delete S.obs[S.res][curB];save()});
 qBody.addEventListener("change",e=>{
   const i=e.target.closest("input[data-q]");
   if(i){S.ans[S.res][i.dataset.q]=i.value===""?null:+i.value;save();renderQ();renderInsp();return}
@@ -890,7 +899,7 @@ const CIT={nbr2020:"ABNT, 2020",nbr1998:"ABNT, 1998",nbr5648:"ABNT, 2018",azeved
 const MEMO=[
  {g:"6.5.1 Fontes de abastecimento",it:[
   ["6.5.1.1","Exigências da concessionária","Quando o abastecimento vem da rede pública, as exigências da concessionária devem ser obedecidas no projeto, na execução, na modificação e na desativação do sistema. O app verifica o tipo de água abastecida e o atendimento a essas exigências (balão 1).",["nbr2020"]],
-  ["6.5.1.2","Independência entre água potável e não potável","O sistema de água não potável, quando existir, deve ser totalmente independente do sistema potável, sem possibilidade de conexão cruzada. A pergunta só é exigida quando há os dois tipos de água.",["nbr2020"]]]},
+  ["6.5.1.2","Independência entre água potável e não potável","O sistema de água não potável, quando existir, deve ser totalmente independente do sistema potável, sem possibilidade de conexão cruzada. Um mesmo reservatório não pode guardar os dois tipos de água.",["nbr2020"]]]},
  {g:"6.5.2 e 6.5.3 Abastecimento e alimentador predial",it:[
   ["6.5.2.1","Tipo de abastecimento","O abastecimento pode ser direto ou indireto. O roteiro trata do abastecimento indireto, com reservatórios inferior e superior.",["nbr2020"]],
   ["6.5.3.1","Pressões do alimentador","O alimentador deve suportar a pressão máxima e ter vazão suficiente com a pressão mínima informadas pela concessionária. O app registra as duas pressões e a pressão de trabalho adotada (balão 5, só no reservatório inferior).",["nbr2020"]],
@@ -898,14 +907,14 @@ const MEMO=[
   ["6.7.2","Vazão de abastecimento","A vazão deve repor todo o volume do consumo diário em até 6 h, ou em até 3 h em residências unifamiliares. É esse critério que define o diâmetro do alimentador na aba Dimensionamento.",["nbr2020"]]]},
  {g:"6.5.5 Proteção sanitária e preservação da potabilidade",it:[
   ["6.5.5.1","Opacidade","O reservatório deve ser opaco ou protegido contra a incidência de luz, que favorece o crescimento de organismos fotossintetizantes e a formação de biofilme.",["nbr2020"],"Inclusão do subitem 6.5.5.1.1, que admite a radiação UV-C como medida complementar."],
-  ["6.5.5.2","Constatação e reparo de vazamentos","O reservatório deve permitir a constatação visual e o reparo de vazamentos em todas as faces. A NBR 5626:1998 exigia 60 cm de afastamento nas laterais, no fundo e na cobertura. Botelho e Ribeiro Júnior recomendam que o reservatório inferior não seja apoiado no solo nem no terreno lateral.",["nbr2020","nbr1998","botelho"],"Altura livre mínima de 2 m sob o fundo do reservatório inferior."],
+  ["6.5.5.2","Constatação e reparo de vazamentos","O reservatório deve permitir a constatação visual e o reparo de vazamentos e impossibilitar a contaminação da água por agentes externos. A NBR 5626:1998 exigia 60 cm de afastamento nas laterais, no fundo e na cobertura. Botelho e Ribeiro Júnior recomendam que o reservatório inferior não seja apoiado no solo nem no terreno lateral.",["nbr2020","nbr1998","botelho"],"Todas as faces visíveis e altura livre mínima de 2,10 m sob o fundo do reservatório inferior."],
   ["6.5.5.3","Estanqueidade e tampa","O reservatório deve ser estanque, com tampa opaca e firmemente presa quando fechada. Frestas na tampa permitem o acesso de mosquitos, como registrado por Serpa et al.",["nbr2020","serpa"],"Ressalto perimetral de no mínimo 10 cm e tampa assentada sobre camada de gesso."],
   ["6.5.5.4","Abertura na cobertura","Deve ser impedido o ingresso de líquidos e de água contaminada ou de qualidade desconhecida pela abertura de acesso na cobertura.",["nbr2020"]],
   ["6.5.5.5","Aberturas nas paredes","Aberturas que se comunicam com o exterior devem impedir a entrada de líquidos, poeira, insetos e outros animais.",["nbr2020"]],
   ["6.5.5.6","Corrosão e revestimento","O reservatório deve resistir à corrosão ou ter revestimento adequado, e as superfícies sujeitas a condensação não podem liberar substâncias nem favorecer biofilme.",["nbr2020"]]]},
  {g:"6.5.6 Forma e capacidade",it:[
   ["6.5.6.1","Interrupções do abastecimento","A capacidade de reservação deve considerar a frequência e a duração das interrupções. Quando a resposta é sim, o app abre um quadro para registrar frequência, duração média, maior duração e fonte, e compara a maior duração com a autonomia da reserva adotada.",["nbr2020"]],
-  ["6.5.6.2","Volume mínimo e reserva de incêndio","O volume deve atender no mínimo 24 h de consumo normal, acrescido do volume de incêndio quando armazenado junto. A reserva técnica de incêndio segue a NT 006 do CBMCE, com o volume da Tabela 3 mais 600 L por hidrante, e a tomada de consumo deve ficar acima dela.",["nbr2020","cbmce","cj2023"]],
+  ["6.5.6.2","Volume mínimo e reserva de incêndio","O volume total reservado, somando inferior e superior, deve atender no mínimo 24 h de consumo normal (o consumo diário da edificação), acrescido do volume de incêndio quando armazenado junto. A reserva técnica de incêndio segue a NT 006 do CBMCE, com o volume da Tabela 3 mais 600 L por hidrante, e a tomada de consumo deve ficar acima dela.",["nbr2020","cbmce","cj2023"]],
   ["6.5.6.3","Volume máximo e cloro residual","O volume deve preservar a ação residual do desinfetante. A nota da norma recomenda até 3 dias de consumo quando não se determina o volume máximo. A Portaria GM/MS nº 888 exige 0,2 mg/L de cloro residual livre nos pontos de consumo.",["nbr2020","portaria"],"Nota 2, determinar o volume pelo consumo efetivo e pelo clima local."],
   ["6.5.6.5","Compartimentação","Reservatórios elevados, exceto em residências unifamiliares isoladas, devem ter dois ou mais compartimentos, e o menor deve atender ao pico de consumo durante a manutenção. A RT-HID-009 indica 6 h como tempo médio de limpeza. Cobrado só no reservatório superior.",["nbr2020","secovi"],"Adotar 12 h de manutenção e entrada própria com controle automático em cada compartimento."],
   ["6.5.6.6","Renovação da água","A posição da entrada e da saída e a forma da tomada devem evitar regiões de estagnação e promover a renovação da água.",["nbr2020"]],
@@ -979,7 +988,7 @@ function missing(){
   })});
   return out;
 }
-const stLbl={c:"Conforme",nc:"Não conforme",na:"Não se aplica",pend:"Sem resposta"};
+const stLbl={c:"Conforme",nc:"Não conforme",na:"Não se aplica",nv:"Não verificável",pend:"Sem resposta"};
 function reportHTML(){
   const R=calc(),P=S.proj,miss=missing(),complete=miss.length===0;
   const dt=P.data?new Date(P.data+"T12:00:00").toLocaleDateString("pt-BR"):"";
@@ -998,6 +1007,7 @@ function reportHTML(){
       h+='<tr><td colspan="4" style="background:var(--panel-2);font-weight:700">Balão '+B.n+', '+esc(bNome(B,r))+(vis(B.n,r)==="ok"?' <span class="c">(concluído)</span>':'')+'</td></tr>';
       qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q),v=S.ans[r][q.id];
         h+='<tr><td style="white-space:nowrap">'+q.it+'</td><td>'+esc(q.t)+'</td><td>'+(st==="na"?"—":esc(v==null?"—":(q.num?v+" "+q.num:v)))+'</td><td class="'+(st==="c"?"c":st==="nc"?"nc":"na")+'">'+stLbl[st]+'</td></tr>'});
+      const ob=S.obs[r][B.n];if(ob)h+='<tr><td>Obs.</td><td colspan="3">'+esc(ob)+'</td></tr>';
     });
     const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
       h+='<tr><td>6.5.6.1</td><td colspan="3">Interrupções registradas: '+fmt(it.freq||0,1)+' por mês, duração média de '+fmt(it.dmed||0,1)+' h e maior duração de '+fmt(it.dmax||0,1)+' h'+(it.fonte?" (fonte: "+esc(it.fonte)+")":"")+'. Autonomia adotada de '+fmt(R.autH,0)+' h.</td></tr>';
@@ -1058,7 +1068,8 @@ function reportPDF(){
     para(doc,"Checklist",{bold:true,size:10.5,color:[29,63,79],after:1});
     const body=[];
     balList(r).forEach(B=>{body.push([{content:"Balão "+B.n+", "+bNome(B,r)+(vis(B.n,r)==="ok"?" (concluído)":""),colSpan:4,styles:{fillColor:[241,245,246],fontStyle:"bold"}}]);
-      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q),v=S.ans[r][q.id];body.push([q.it,q.t,st==="na"?"—":(v==null?"—":(q.num?v+" "+q.num:String(v))),{content:stLbl[st],styles:{textColor:st==="c"?[43,138,87]:st==="nc"?[192,57,43]:[91,112,122],fontStyle:"bold"}}])})});
+      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q),v=S.ans[r][q.id];body.push([q.it,q.t,st==="na"?"—":(v==null?"—":(q.num?v+" "+q.num:String(v))),{content:stLbl[st],styles:{textColor:st==="c"?[43,138,87]:st==="nc"?[192,57,43]:[91,112,122],fontStyle:"bold"}}])});
+      const ob=S.obs[r][B.n];if(ob)body.push(["Obs.",{content:ob,colSpan:3}])});
     const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
       body.push(["6.5.6.1",{content:"Interrupções: "+fmt(it.freq||0,1)+" por mês, média de "+fmt(it.dmed||0,1)+" h, maior de "+fmt(it.dmax||0,1)+" h"+(it.fonte?", fonte "+it.fonte:"")+". Autonomia adotada de "+fmt(R.autH,0)+" h.",colSpan:3}]);
     table(doc,["Item","Verificação","Resposta","Situação"],body,{columnStyles:{0:{cellWidth:20},2:{cellWidth:26},3:{cellWidth:26}}});

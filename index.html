@@ -460,17 +460,17 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 /* ============ CÁLCULOS ============ */
 /* Constantes com referência (ver aba Memorial):
-   VMAX  velocidade máxima da água nas tubulações, 3 m/s (NBR 5626:1998, item 5.3.4)
-   PBOIA pressão dinâmica mínima na entrada do reservatório, 1 mca = 10 kPa (NBR 5626:2020)
-   REC_PCT vazão horária do recalque, 20% do consumo diário (Carvalho Júnior, 2014)
+   VMAX  velocidade máxima da água nas tubulações, 3 m/s (Tigre, 2025, p. 33)
+   PBOIA pressão mínima na entrada do reservatório, 1 mca (Tigre, 2025, p. 39)
+   T_REP reposição do consumo diário em até 6 h (NBR 5626:2020, item 6.7.2)
    LIMP_MIN diâmetro mínimo da limpeza, 32 mm (Carvalho Júnior, 2023, p. 41) */
-const VMAX=3,PBOIA=1,REC_PCT=20,LIMP_MIN=32;
+const VMAX=3,PBOIA=1,T_REP=6,LIMP_MIN=32;
 const pvcByDn=de=>PVC.find(p=>p.dn===de)||PVC[PVC.length-1];
 const com=x=>(PVC.find(p=>p.di>=x)||PVC[PVC.length-1]).dn;
 const up=de=>{const i=PVC.findIndex(p=>p.dn===de);return PVC[Math.min(i+1,PVC.length-1)].dn};
 const areaOf=de=>Math.PI*Math.pow(pvcByDn(de).di/1000,2)/4;
-/* Fair-Whipple-Hsiao para PVC, unidades SI: J (m/m) = 0,000859 · Q^1,75 · D^-4,75 (Q em m³/s, D em m) */
-const qFWH=(J,d)=>Math.pow(J*Math.pow(d,4.75)/0.000859,1/1.75);
+/* Fair-Whipple-Hsiao para PVC, unidades SI: J (m/m) = 0,0008695 · Q^1,75 · D^-4,75 (Q em m³/s, D em m), Tigre (2025, p. 35) */
+const qFWH=(J,d)=>Math.pow(J*Math.pow(d,4.75)/0.0008695,1/1.75);
 function alimOf(de,I,cd){
   const H=(+I.pMin||0)-(+I.dzAlim||0)-PBOIA,L=Math.max(+I.lAlim||1,1),d=pvcByDn(de).di/1000,A=areaOf(de);
   const out={de,H,J:H>0?H/L:0,A};
@@ -511,24 +511,24 @@ function calc(){
   /* Alimentador predial: vazão pela pressão mínima, desnível, comprimento e diâmetro */
   R.al=alimOf(+I.dAlim||25,I,R.cd);R.dal=R.al.de;R.qal=R.al.q;R.valim=R.al.v;R.tRepReal=R.al.tRep;
   R.dalMin=(PVC.find(p=>alimOf(p.dn,I,R.cd).ok)||{}).dn||null;
-  /* Recalque: vazão horária de 20% do consumo diário (5 h de funcionamento), diâmetro por Forchheimer */
-  R.hRec=100/REC_PCT;R.qrec=R.cd*REC_PCT/100/3600;R.qrech=R.qrec*3.6;
+  /* Recalque: repõe o consumo diário em 6 h (6.7.2); diâmetro econômico por Forchheimer com X = 6/24 */
+  R.hRec=T_REP;R.qrec=R.cd/(T_REP*3600);R.qrech=R.qrec*3.6;
   R.drt=1.3*Math.sqrt(R.qrec/1000)*Math.pow(R.hRec/24,.25)*1000;R.drec=com(R.drt);R.vrec=R.qrec/1000/areaOf(R.drec);
   /* Extravasor: bitola comercial imediatamente superior à da entrada de água */
   R.dexs=up(R.drec);R.dexi=up(R.dal);
-  /* Limpeza: diâmetro mínimo recomendado */
-  R.dls=R.dli=PVC.find(p=>p.dn>=LIMP_MIN).dn;
+  /* Limpeza: igual ou maior que a entrada (Tigre, 2025, p. 74), nunca menor que 32 mm (Carvalho Júnior, 2023, p. 41) */
+  const dLm=PVC.find(p=>p.dn>=LIMP_MIN).dn;R.dls=Math.max(R.drec,dLm);R.dli=Math.max(R.dal,dLm);
   /* Saída e barrilete: método dos pesos, Q = 0,3·√ΣP, menor DN com v ≤ 3 m/s */
   R.pu=PESOS.reduce((s,p,i)=>s+p[3]*(+I.qtd[i]||0),0);R.nun=I.unid*I.andares;R.pt=R.nun*R.pu;R.qs=0.3*Math.sqrt(R.pt);
   R.dsai=(PVC.find(p=>R.qs/1000/areaOf(p.dn)<=VMAX)||PVC[PVC.length-1]).dn;R.vsai=R.qs/1000/areaOf(R.dsai);
   R.tubos=[
    {n:"Alimentador predial",r:"inf",q:R.qal,de:R.dal,v:R.valim,reg:"Registro de fechamento a montante e próximo do reservatório, e torneira de boia na entrada (6.5.8.1 e 6.5.8.2)",crit:"Escolhido no campo Alimentador; vazão pela pressão mínima"},
-   {n:"Recalque (entrada do superior)",r:"sup",q:R.qrec,de:R.drec,v:R.vrec,reg:"Registro de fechamento próximo ao reservatório superior (6.5.8.2)",crit:"Forchheimer"},
+   {n:"Recalque (entrada do superior)",r:"sup",q:R.qrec,de:R.drec,v:R.vrec,reg:"Registro de fechamento próximo ao reservatório superior (6.5.8.2)",crit:"Repõe o consumo diário em 6 h; Forchheimer"},
    {n:"Saída de cada reservatório e barrilete",r:"sup",q:R.qs,de:R.dsai,v:R.vsai,reg:"Registro em cada saída de reservatório e em cada coluna",crit:"Método dos pesos, v ≤ 3 m/s"},
    {n:"Extravasor",r:"sup",de:R.dexs,reg:"Sem registro, escoamento livre (6.5.9.4)",crit:"Uma bitola acima do recalque"},
-   {n:"Limpeza",r:"sup",de:R.dls,reg:"Registro de fácil acesso, próximo à saída (6.5.9.1)",crit:"Mínimo de 32 mm"},
+   {n:"Limpeza",r:"sup",de:R.dls,reg:"Registro de fácil acesso, próximo à saída (6.5.9.1)",crit:"Igual à entrada (recalque), mínimo de 32 mm"},
    {n:"Extravasor",r:"inf",de:R.dexi,reg:"Sem registro, escoamento livre (6.5.9.4)",crit:"Uma bitola acima do alimentador"},
-   {n:"Limpeza",r:"inf",de:R.dli,reg:"Registro de fácil acesso, próximo à saída (6.5.9.1)",crit:"Mínimo de 32 mm"}];
+   {n:"Limpeza",r:"inf",de:R.dli,reg:"Registro de fácil acesso, próximo à saída (6.5.9.1)",crit:"Igual à entrada (alimentador), mínimo de 32 mm"}];
   return R;
 }
 const PL={pessoa:"pessoas",aluno:"alunos","criança":"crianças",leito:"leitos","hóspede":"hóspedes","refeição":"refeições","veículo":"veículos"};
@@ -580,13 +580,13 @@ const Q=[
  {id:"a4",it:"6.5.1.2",bs:1,bi:1,dep:"a3",t:"São sistemas isolados dos sistemas de água potável?",conf:yes,nc:"Os sistemas devem ser isolados e independentes."},
  {id:"a5",it:"6.5.1.2",bs:1,bi:1,dep:"a3",t:"As águas potável e não potável estão livres de cruzamento entre si?",conf:yes,nc:"Não pode haver conexão cruzada entre água potável e não potável."},
  {id:"a6",it:"6.5.2.1",bs:1,bi:1,t:"O abastecimento de água é do tipo indireto?",conf:yes,nc:"Este roteiro considera o abastecimento indireto, com reservação."},
- {id:"b1",it:"6.5.3.1",bs:5,bi:5,t:"No projeto do alimentador, foi considerada a pressão mínima de trabalho?",conf:yes},
- {id:"b2",it:"6.5.3.1",bs:5,bi:5,t:"O material constituinte do alimentador é capaz de suportar a pressão máxima de trabalho?",conf:yes},
- {id:"b3",it:"6.5.3.1",bs:5,bi:5,t:"O material do alimentador demonstra resistência contra ruídos e vibrações?",conf:yes},
- {id:"b4",it:"6.5.3.2",bs:5,bi:5,t:"O alimentador é enterrado?",conf:any},
- {id:"b5",it:"6.5.3.2",bs:5,bi:5,dep:"b4",t:"Está afastado horizontalmente de fontes potencialmente poluidoras?",conf:yes},
- {id:"b6",it:"6.5.3.2",bs:5,bi:5,dep:"b4",t:"Está enterrado junto com fontes poluidoras (na mesma vala)?",conf:any},
- {id:"b7",it:"6.5.3.2",bs:5,bi:5,dep:"b6",t:"Sua geratriz inferior está acima da geratriz superior dessas fontes?",conf:yes},
+ {id:"b1",it:"6.5.3.1",bi:5,t:"No projeto do alimentador, foi considerada a pressão mínima de trabalho?",conf:yes},
+ {id:"b2",it:"6.5.3.1",bi:5,t:"O material constituinte do alimentador é capaz de suportar a pressão máxima de trabalho?",conf:yes},
+ {id:"b3",it:"6.5.3.1",bi:5,t:"O material do alimentador demonstra resistência contra ruídos e vibrações?",conf:yes},
+ {id:"b4",it:"6.5.3.2",bi:5,t:"O alimentador é enterrado?",conf:any},
+ {id:"b5",it:"6.5.3.2",bi:5,dep:"b4",t:"Está afastado horizontalmente de fontes potencialmente poluidoras?",conf:yes},
+ {id:"b6",it:"6.5.3.2",bi:5,dep:"b4",t:"Está enterrado junto com fontes poluidoras (na mesma vala)?",conf:any},
+ {id:"b7",it:"6.5.3.2",bi:5,dep:"b6",t:"Sua geratriz inferior está acima da geratriz superior dessas fontes?",conf:yes},
  {id:"c1",it:"6.5.5.1",bs:2,bi:2,t:"O reservatório é opaco ou dotado de meios de proteção contra a incidência da luz?",conf:yes},
  {id:"c2",it:"6.5.5.2",bs:2,bi:2,t:"É possível fazer a constatação visual e o reparo de vazamentos?",conf:yes},
  {id:"c3",it:"6.5.5.2",bs:2,bi:2,t:"É impossibilitada a contaminação da água por qualquer agente externo?",conf:yes},
@@ -627,12 +627,12 @@ const Q=[
  {id:"f1",it:"6.5.7.1",bs:3,bi:3,t:"O reservatório ou as portas de acesso possuem alguma deformação?",conf:any},
  {id:"f2",it:"6.5.7.1",bs:3,bi:3,dep:"f1",t:"Mesmo com essa deformação, o reservatório e os componentes instalados funcionam normalmente?",conf:yes,
    nc:"A deformação não pode comprometer o funcionamento do reservatório nem dos componentes instalados."},
- {id:"g1",it:"6.5.8.1",bs:6,bi:6,t:"A jusante do alimentador há um componente de controle automático de admissão de água instalado?",conf:yes},
+ {id:"g1",it:"6.5.8.1",bs:6,bi:6,t:{inf:"A jusante do alimentador há um componente de controle automático de admissão de água instalado?",sup:"Na entrada do recalque há um componente de controle automático de admissão de água instalado (boia elétrica ou chave de nível que comanda a bomba)?"},conf:yes},
  {id:"g2",it:"6.5.8.1",bs:6,bi:6,dep:"g1",t:"Esse componente é capaz de ajustar o nível operacional?",conf:yes},
  {id:"g3",it:"6.5.8.1",bs:6,bi:6,dep:"g1",t:"Esse componente é capaz de proteger contra o refluxo?",conf:yes},
- {id:"g4",it:"6.5.8.2",bs:5,bi:5,t:"Há um registro de fechamento a montante do reservatório no alimentador predial?",conf:yes},
+ {id:"g4",it:"6.5.8.2",bs:5,bi:5,t:{inf:"Há um registro de fechamento a montante do reservatório no alimentador predial?",sup:"Há um registro de fechamento na tubulação de recalque, a montante e próximo do reservatório superior?"},conf:yes},
  {id:"g5",it:"6.5.8.3",bs:1,bi:1,t:"O nível máximo da água se situa abaixo do nível de extravasão?",conf:yes},
- {id:"h1",it:"6.5.9.1",bs:8,bi:8,t:"Há tubulação de limpeza?",conf:yes,help:R=>"Pelo dimensionamento, a limpeza tem "+dn(R.dls)+" (mínimo de 32 mm)."},
+ {id:"h1",it:"6.5.9.1",bs:8,bi:8,t:"Há tubulação de limpeza?",conf:yes,help:R=>"Pelo dimensionamento, a limpeza tem "+dn(S.res==="sup"?R.dls:R.dli)+" neste reservatório."},
  {id:"h2",it:"6.5.9.1",bs:8,bi:8,dep:"h1",t:"Essa tubulação possui registro de fechamento próximo à saída do reservatório?",conf:yes},
  {id:"h3",it:"6.5.9.2",bs:10,bi:9,t:"O reservatório possui cantos internos arredondados ou chanfrados?",conf:yes},
  {id:"h4",it:"6.5.9.2",bs:10,bi:2,t:"Existe declividade do fundo em direção ao bocal ou flange da tubulação de limpeza?",conf:yes,
@@ -656,9 +656,10 @@ const Q=[
  {id:"j2",it:"6.5.10.2",bs:3,bi:3,t:"O reservatório permite que o seu interior seja facilmente acessado, verificado e limpo?",conf:yes},
  {id:"j3",it:"6.5.10.2",bs:8,bi:8,t:"O acesso para verificação e limpeza é garantido por meio de abertura com dimensão suficiente?",conf:yes},
  {id:"j4",it:"6.5.10.3",bs:3,bi:3,t:"O espaço em torno do reservatório é suficiente para permitir a realização das atividades de verificação e manutenção, garantindo a movimentação segura da pessoa encarregada de executá-las?",conf:yes},
- {id:"k1",it:"6.7.2",bs:5,bi:5,t:"A vazão considerada no abastecimento do reservatório é suficiente para a reposição total do volume destinado ao consumo diário em até 6 h?",conf:yes,
-   help:R=>S.res==="inf"?"Pelo dimensionamento, o alimentador "+dn(R.dal)+" repõe o consumo diário em "+fmt(R.tRepReal,1)+" h.":"Pelo dimensionamento, o recalque de "+fmt(R.qrech,2)+" m³/h repõe o consumo diário em "+fmt(R.hRec,1)+" h."}
+ {id:"k1",it:"6.7.2",bs:5,bi:5,t:{inf:"A vazão considerada no abastecimento do reservatório é suficiente para a reposição total do volume destinado ao consumo diário em até 6 h?",sup:"A vazão de recalque é suficiente para a reposição total do volume destinado ao consumo diário em até 6 h?"},conf:yes,
+   help:R=>S.res==="inf"?"Pelo dimensionamento, o alimentador "+dn(R.dal)+" repõe o consumo diário em "+fmt(R.tRepReal,1)+" h.":"Pelo dimensionamento, o recalque precisa de "+fmt(R.qrec,2)+" L/s ("+fmt(R.qrech,2)+" m³/h) para repor o consumo diário em 6 h, com "+dn(R.drec)+"."}
 ];
+const tx=(q,r)=>typeof q.t==="string"?q.t:q.t[r];
 const balOf=(q,r)=>r==="sup"?q.bs:q.bi;
 const qsOf=(b,r)=>Q.filter(q=>balOf(q,r)===b);
 const qById=id=>Q.find(q=>q.id===id);
@@ -780,8 +781,8 @@ function renderQ(){
   qsOf(curB,S.res).forEach(q=>{
     if(depOff(A,q))return;
     const st=status(A,q),d=document.createElement("div");d.className="q";
-    let h='<div class="qhead"><div class="item">Item '+q.it+'</div><button type="button" class="helpbtn" data-help="'+q.id+'" aria-expanded="'+helpOpen.has(q.id)+'" aria-controls="help_'+q.id+'" title="Dúvidas e referência">?</button></div><div class="txt">'+esc(q.t)+'</div>';
-    h+='<div class="opts" role="group" aria-label="'+esc(q.t)+'">'+NV.map(o=>{
+    let h='<div class="qhead"><div class="item">Item '+q.it+'</div><button type="button" class="helpbtn" data-help="'+q.id+'" aria-expanded="'+helpOpen.has(q.id)+'" aria-controls="help_'+q.id+'" title="Dúvidas e referência">?</button></div><div class="txt">'+esc(tx(q,S.res))+'</div>';
+    h+='<div class="opts" role="group" aria-label="'+esc(tx(q,S.res))+'">'+NV.map(o=>{
       const pr=A[q.id]===o,cls=o==="Não verificável"||q.conf===any?"n":(q.conf(o,A,S.res)?"c":"nc");
       return '<button type="button" class="'+cls+'" aria-pressed="'+pr+'" data-q="'+q.id+'" data-v="'+esc(o)+'">'+esc(o)+'</button>'}).join("")+'</div>';
     if(st==="nc"){h+='<div class="flag">Não conforme'+(q.nc?". "+esc(q.nc):".")+'</div>'}
@@ -918,24 +919,18 @@ const REFS={
  nbr2020:"ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS (ABNT). NBR 5626: sistemas prediais de água fria e água quente: projeto, execução, operação e manutenção. Rio de Janeiro: ABNT, 2020.",
  nbr1998:"ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS (ABNT). NBR 5626: instalação predial de água fria. Rio de Janeiro: ABNT, 1998.",
  nbr5648:"ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS (ABNT). NBR 5648: tubos e conexões de PVC-U com junta soldável para sistemas prediais de água fria: requisitos. Rio de Janeiro: ABNT, 2018.",
- nbr12218:"ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS (ABNT). NBR 12218: projeto de rede de distribuição de água para abastecimento público: procedimento. Rio de Janeiro: ABNT, 2017.",
  acfor:"FORTALEZA. Agência de Regulação, Fiscalização e Controle dos Serviços Públicos de Saneamento Ambiental (ACFOR). Resolução nº 05/2024: condições gerais de prestação e utilização dos serviços de abastecimento de água e esgotamento sanitário. Diário Oficial do Município, Fortaleza, 6 fev. 2025.",
- azevedo:"AZEVEDO NETTO, J. M. et al. Manual de hidráulica. 9. ed. São Paulo: Blucher, 2015.",
  botelho:"BOTELHO, M. H. C.; RIBEIRO JÚNIOR, G. de A. Instalações hidráulicas prediais utilizando tubos plásticos. 4. ed. São Paulo: Blucher, 2014.",
  portaria:"BRASIL. Ministério da Saúde. Portaria GM/MS nº 888, de 4 de maio de 2021. Diário Oficial da União, Brasília, DF, 7 maio 2021.",
- cj2014:"CARVALHO JÚNIOR, R. de. Instalações prediais hidráulico-sanitárias: princípios básicos para elaboração de projetos. São Paulo: Blucher, 2014.",
  cj2022:"CARVALHO JÚNIOR, R. de. Instalações hidráulicas e o projeto de arquitetura. 14. ed. São Paulo: Blucher, 2022.",
  cj2023:"CARVALHO JÚNIOR, R. de. Sistemas prediais hidráulicos e sanitários: princípios básicos para elaboração de projetos. 5. ed. São Paulo: Blucher, 2023.",
  cbmce:"CEARÁ. Corpo de Bombeiros Militar do Estado do Ceará. Norma Técnica nº 006/2008: sistema de hidrantes para combate a incêndio. Fortaleza: CBMCE, 2008.",
- creder:"CREDER, H. Instalações hidráulicas e sanitárias. 6. ed. Rio de Janeiro: LTC, 2006.",
- macintyre:"MACINTYRE, A. J. Instalações hidráulicas prediais e industriais. 4. ed. Rio de Janeiro: LTC, 2010.",
  secovi:"SECOVI-SP; ABRASIP. Recomendação Técnica RT-HID-009 rev. 0: atendimento à ABNT NBR 5626/20. São Paulo, 2020.",
+ tigre:"TIGRE. Manual técnico: instalações hidráulicas prediais. Joinville: Tigre, 2025. Disponível em: https://tigresite.s3.amazonaws.com/2025/08/manual_tigre_2025.pdf. Acesso em: 17 nov. 2026.",
  serpa:"SERPA, L. L. N. et al. Prevenção da dengue: implicações do uso de tela no controle de Aedes aegypti em reservatórios de água para consumo humano. BEPA, São Paulo, v. 7, n. 80, p. 4-9, 2010.",
- usp:"UNIVERSIDADE DE SÃO PAULO. Escola Politécnica. 0313401 Projeto do edifício: sistemas prediais. Aula 1: água fria e água quente. São Paulo: EPUSP, 2020. Material didático.",
  tcc:"MACEDO, J. de Q. Reservatórios de água fria moldados in loco em edificações de múltiplos pavimentos: análise crítica dos itens 6.5.5 a 6.5.10 da ABNT NBR 5626:2020 e proposta de roteiro técnico. Trabalho de conclusão de curso (Engenharia Civil), IFCE, Fortaleza, 2026."
 };
-const CIT={nbr2020:"ABNT, 2020",nbr1998:"ABNT, 1998",nbr5648:"ABNT, 2018",nbr12218:"ABNT, 2017",acfor:"ACFOR, 2024",azevedo:"Azevedo Netto et al., 2015",botelho:"Botelho e Ribeiro Júnior, 2014",portaria:"Brasil, 2021",
- cj2014:"Carvalho Júnior, 2014",cj2022:"Carvalho Júnior, 2022",cj2023:"Carvalho Júnior, 2023",cbmce:"CBMCE, 2008",creder:"Creder, 2006",macintyre:"Macintyre, 2010",secovi:"Secovi-SP e Abrasip, 2020",serpa:"Serpa et al., 2010",usp:"EPUSP, 2020",tcc:"Macedo, 2026"};
+const CIT={nbr2020:"ABNT, 2020",nbr1998:"ABNT, 1998",nbr5648:"ABNT, 2018",acfor:"ACFOR, 2024",botelho:"Botelho e Ribeiro Júnior, 2014",portaria:"Brasil, 2021",cj2022:"Carvalho Júnior, 2022",cj2023:"Carvalho Júnior, 2023",cbmce:"CBMCE, 2008",secovi:"Secovi-SP e Abrasip, 2020",serpa:"Serpa et al., 2010",tigre:"Tigre, 2025",tcc:"Macedo, 2026"};
 
 /* ============ MEMORIAL ============ */
 const MEMO=[
@@ -944,7 +939,7 @@ const MEMO=[
   ["6.5.1.2","Independência entre água potável e não potável","O sistema de água não potável, quando existir, deve ser totalmente independente do sistema potável, sem possibilidade de conexão cruzada. Um mesmo reservatório não pode guardar os dois tipos de água.",["nbr2020"]]]},
  {g:"6.5.2 e 6.5.3 Abastecimento e alimentador predial",it:[
   ["6.5.2.1","Tipo de abastecimento","O abastecimento pode ser direto ou indireto. O roteiro trata do abastecimento indireto, com reservatórios inferior e superior.",["nbr2020"]],
-  ["6.5.3.1","Pressões do alimentador","O alimentador deve suportar a pressão máxima e ter vazão suficiente com a pressão mínima informadas pela concessionária. A pressão mínima da rede entra no cálculo da vazão do alimentador, na aba Dimensionamento.",["nbr2020","nbr12218"]],
+  ["6.5.3.1","Pressões do alimentador","O alimentador deve suportar a pressão máxima e ter vazão suficiente com a pressão mínima informadas pela concessionária. A pressão mínima da rede entra no cálculo da vazão do alimentador, na aba Dimensionamento.",["nbr2020"]],
   ["6.5.3.2","Alimentador enterrado","Quando enterrado, o alimentador deve ficar afastado de fontes poluidoras e, na mesma vala de tubulações poluidoras, ter a geratriz inferior acima da geratriz superior externa delas.",["nbr2020"]],
   ["6.7.2","Vazão de abastecimento","A vazão deve repor todo o volume do consumo diário em até 6 h, ou em até 3 h em residências unifamiliares. É esse critério que define o diâmetro do alimentador na aba Dimensionamento.",["nbr2020"]]]},
  {g:"6.5.5 Proteção sanitária e preservação da potabilidade",it:[
@@ -956,7 +951,7 @@ const MEMO=[
   ["6.5.5.6","Corrosão e revestimento","O reservatório deve resistir à corrosão ou ter revestimento adequado, e as superfícies sujeitas a condensação não podem liberar substâncias nem favorecer biofilme.",["nbr2020"]]]},
  {g:"6.5.6 Forma e capacidade",it:[
   ["6.5.6.1","Interrupções do abastecimento","A capacidade de reservação deve considerar a frequência e a duração das interrupções. Quando a resposta é sim, o app abre um quadro para registrar frequência, duração média, maior duração e fonte, e compara a maior duração com a autonomia da reserva adotada.",["nbr2020"]],
-  ["6.5.6.2","Volume mínimo e reserva de incêndio","O volume total reservado, somando inferior e superior, deve atender no mínimo 24 h de consumo normal (o consumo diário da edificação), acrescido do volume de incêndio quando armazenado junto. No app, a reserva técnica de incêndio é informada como porcentagem do consumo diário; para aprovação vale a norma do Corpo de Bombeiros (no Ceará, NT 006/2008).",["nbr2020","creder","cbmce|item 4.9.2"]],
+  ["6.5.6.2","Volume mínimo e reserva de incêndio","O volume total reservado, somando inferior e superior, deve atender no mínimo 24 h de consumo normal (o consumo diário da edificação), acrescido do volume de incêndio quando armazenado junto. No app, a reserva técnica de incêndio é informada como porcentagem do consumo diário; para aprovação vale a norma do Corpo de Bombeiros (no Ceará, NT 006/2008).",["nbr2020","tigre|p. 60","cbmce|item 4.9.2"]],
   ["6.5.6.3","Volume máximo e cloro residual","O volume deve preservar a ação residual do desinfetante. A nota da norma recomenda até 3 dias de consumo quando não se determina o volume máximo. A Portaria GM/MS nº 888 exige 0,2 mg/L de cloro residual livre nos pontos de consumo.",["nbr2020","portaria"],"Nota 2, determinar o volume pelo consumo efetivo e pelo clima local."],
   ["6.5.6.4","Divisão entre reservatórios","Quando o volume é dividido entre reservatórios, como inferior e superior, a divisão deve atender às necessidades do sistema de água fria.",["nbr2020"]],
   ["6.5.6.5","Compartimentação","Reservatórios elevados, exceto em residências unifamiliares isoladas, devem ter dois ou mais compartimentos, e o menor deve atender ao pico de consumo durante a manutenção. A RT-HID-009 indica 6 h como tempo médio de limpeza.",["nbr2020","secovi"],"Adotar 12 h de manutenção e entrada própria com controle automático em cada compartimento."],
@@ -980,32 +975,32 @@ const MEMO=[
   ["6.5.10.3","Espaço em torno","O espaço em torno deve permitir a manutenção com segurança. A NBR 5626:1998 exigia 60 cm e o Secovi-SP e a Abrasip recomendam 50 cm.",["nbr2020","nbr1998|item 5.6.7.4","secovi|p. 7"],"Afastamento mínimo de 60 cm."]]}
 ];
 function calcMemo(){
-  const R=calc(),I=S.inp,PC="p. a confirmar";
+  const R=calc(),I=S.inp;
   return [
   {g:"Edificação",rows:[
-   ["Consumo diário","CD = consumo per capita × população","CD = "+fmt(R.cu)+" × "+fmt(R.qt)+" = "+fmt(R.cd)+" L/dia",["cj2023|"+PC,"creder|"+PC]],
-   ["Reserva de consumo","Rc = CD × dias de reservação, entre 1 dia (item 6.5.6.2) e 3 dias (nota do item 6.5.6.3)","Rc = "+fmt(R.cd)+" × "+fmt(R.dias,1)+" = "+fmt(R.rCons)+" L",["nbr2020|itens 6.5.6.2 e 6.5.6.3"]],
-   ["Reserva de manutenção","Rm = CD × duração da manutenção ÷ 24 (12 h, proposta do TCC; 6 h é a média da RT-HID-009)","Rm = "+fmt(R.cd)+" × "+fmt(I.tManut,1)+" ÷ 24 = "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5","secovi|"+PC,"tcc"]],
-   ["Reserva técnica de incêndio","RTI = porcentagem × CD. A literatura estima de 15% a 20% do consumo diário. Para aprovação, prevalece a norma do Corpo de Bombeiros (no Ceará, NT 006/2008, Tabela 3)","RTI = "+fmt(I.pctInc,0)+"% × "+fmt(R.cd)+" = "+fmt(R.rInc)+" L",["creder|"+PC,"cj2022|"+PC,"cbmce|item 4.9.2"]],
-   ["Velocidade máxima","v = Q ÷ A ≤ 3 m/s, com A pela área interna do tubo","Verificada em todas as tubulações com vazão",["nbr1998|item 5.3.4","nbr5648"]]]},
+   ["Consumo diário","CD = consumo per capita × população","CD = "+fmt(R.cu)+" × "+fmt(R.qt)+" = "+fmt(R.cd)+" L/dia",["tigre|p. 58-59"]],
+   ["Reserva de consumo","Rc = CD × dias de reservação, entre 1 dia (item 6.5.6.2) e 3 dias (nota do item 6.5.6.3); usual de 2 dias","Rc = "+fmt(R.cd)+" × "+fmt(R.dias,1)+" = "+fmt(R.rCons)+" L",["nbr2020|itens 6.5.6.2 e 6.5.6.3","tigre|p. 60"]],
+   ["Reserva de manutenção","Rm = CD × duração da manutenção ÷ 24 (12 h, proposta do TCC)","Rm = "+fmt(R.cd)+" × "+fmt(I.tManut,1)+" ÷ 24 = "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5","tcc"]],
+   ["Reserva técnica de incêndio","RTI = porcentagem × CD. Em prédios, acrescentam-se de 15% a 20% do consumo para reserva de incêndio. Para aprovação, prevalece a norma do Corpo de Bombeiros (no Ceará, NT 006/2008, Tabela 3)","RTI = "+fmt(I.pctInc,0)+"% × "+fmt(R.cd)+" = "+fmt(R.rInc)+" L",["tigre|p. 60","cbmce|item 4.9.2"]],
+   ["Velocidade máxima","v = Q ÷ A ≤ 3 m/s, com A pela área interna do tubo","Verificada em todas as tubulações com vazão",["tigre|p. 33","nbr5648"]]]},
   {g:"Reservatório superior",rows:[
-   ["Parcela de consumo","Cs = "+fmt(I.pctSup,0)+"% × Rc (divisão usual de 40% no superior e 60% no inferior)","Cs = "+fmt(R.cSupPct)+" L"+(R.supAum?", ajustada para "+fmt(R.cSup)+" L":""),["usp","cj2014|"+PC]],
+   ["Parcela de consumo","Cs = "+fmt(I.pctSup,0)+"% × Rc (usual: 40% no superior e 60% no inferior)","Cs = "+fmt(R.cSupPct)+" L"+(R.supAum?", ajustada para "+fmt(R.cSup)+" L":""),["tigre|p. 60"]],
    ["Manutenção (6.5.6.5)","Com n reservatórios, cada um deve atender sozinho à manutenção: Cs ≥ n × Rm",R.nS+" × "+fmt(R.rManut)+" = "+fmt(R.nS*R.rManut)+" L",["nbr2020|item 6.5.6.5"]],
    ["Volume do superior","Vs = Cs + RTI, calculado automaticamente","Vs = "+fmt(R.cSup)+" + "+fmt(R.rInc)+" ≈ "+fmt(R.vSup)+" L",["nbr2020|item 6.5.6.2"]],
    ["Dimensões","Área = volume de cada reservatório ÷ altura útil; largura = área ÷ comprimento",fmt(R.camS[0].v)+" L ÷ "+fmt(I.hSup,2)+" m = "+fmt(R.camS[0].a,2)+" m², largura de "+fmt(R.camS[0].l,2)+" m",[]],
-   ["Vazão do recalque","Vazão horária mínima de 15% do CD; na prática, 20% do CD (bomba funcionando 5 h por dia). Qr = 0,20 × CD ÷ 3600","Qr = 0,20 × "+fmt(R.cd)+" ÷ 3600 = "+fmt(R.qrec,2)+" L/s",["cj2014|"+PC]],
-   ["Diâmetro do recalque","Fórmula de Forchheimer: D = 1,3 · √Q · X^0,25, com Q em m³/s e X = horas de funcionamento ÷ 24","D = 1,3 × √"+fmt(R.qrec/1000,5)+" × ("+fmt(R.hRec,0)+"/24)^0,25 = "+fmt(R.drt,1)+" mm, "+dn(R.drec)+" (v = "+fmt(R.vrec,2)+" m/s)",["macintyre|"+PC,"creder|"+PC]],
+   ["Vazão do recalque","Repor o consumo diário em até 6 h: Qr = CD ÷ (6 × 3600)","Qr = "+fmt(R.cd)+" ÷ 21.600 = "+fmt(R.qrec,2)+" L/s",["nbr2020|item 6.7.2"]],
+   ["Diâmetro do recalque","Diâmetro econômico (Forchheimer): D = 1,3 · √Q · X^0,25, com Q em m³/s e X = horas de funcionamento da bomba ÷ 24","D = 1,3 × √"+fmt(R.qrec/1000,5)+" × ("+fmt(R.hRec,0)+"/24)^0,25 = "+fmt(R.drt,1)+" mm, "+dn(R.drec)+" (v = "+fmt(R.vrec,2)+" m/s)",["tigre|p. 63"]],
    ["Extravasor","Bitola comercial imediatamente superior à da entrada de água",dn(R.dexs)+", uma acima do recalque "+dn(R.drec),["cj2023|p. 41"]],
-   ["Limpeza","Diâmetro não menor que 32 mm, para o lodo do fundo não obstruir a tubulação",dn(R.dls),["cj2023|p. 41"]],
-   ["Saída e barrilete","Método dos pesos: Q = 0,3 · √ΣP; menor DN com v ≤ 3 m/s","ΣP = "+fmt(R.pt,1)+", Q = "+fmt(R.qs,2)+" L/s, "+dn(R.dsai)+" (v = "+fmt(R.vsai,2)+" m/s)",["nbr1998|Anexo A","nbr1998|item 5.3.4"]]]},
+   ["Limpeza","Igual ou maior que a tubulação de entrada, e não menor que 32 mm, para o lodo do fundo não obstruir a tubulação",dn(R.dls)+", igual ao recalque",["tigre|p. 74","cj2023|p. 41"]],
+   ["Saída e barrilete","Método dos pesos: Q = 0,3 · √ΣP; menor DN com v ≤ 3 m/s","ΣP = "+fmt(R.pt,1)+", Q = "+fmt(R.qs,2)+" L/s, "+dn(R.dsai)+" (v = "+fmt(R.vsai,2)+" m/s)",["nbr1998|Anexo A","tigre|p. 64 e 68"]]]},
   {g:"Reservatório inferior",rows:[
    ["Volume do inferior","Vi = Rc − Cs, calculado automaticamente","Vi = "+fmt(R.rCons)+" − "+fmt(R.cSup)+" ≈ "+fmt(R.vInf)+" L",["nbr2020|item 6.5.6.2"]],
    ["Compartimento único (6.5.6.7)","Permitido só se Rm < Cs (consumo durante a manutenção menor que o consumo guardado no superior)",fmt(R.rManut)+" L "+(R.infUnicoOk?"<":"≥")+" "+fmt(R.cSup)+" L: "+(R.infUnicoOk?"permitido":"não permitido"),["nbr2020|item 6.5.6.7"]],
-   ["Carga disponível no alimentador","H = pressão mínima da rede − desnível − 1 mca (10 kPa de pressão dinâmica mínima na entrada). A rede pública deve garantir no mínimo 10 mca","H = "+fmt(I.pMin,1)+" − "+fmt(I.dzAlim,1)+" − 1 = "+fmt(R.al.H,2)+" mca",["nbr12218|"+PC,"nbr2020|"+PC]],
-   ["Vazão do alimentador","Fair-Whipple-Hsiao para PVC: J = 0,000859 · Q^1,75 · D^−4,75 (SI), com J = H ÷ L. Q = (J · D^4,75 ÷ 0,000859)^(1/1,75), limitada a v = 3 m/s","J = "+fmt(R.al.J,4)+" m/m, "+dn(R.dal)+" (Di = "+fmt(pvcByDn(R.dal).di,1)+" mm): Q = "+fmt(R.qal,2)+" L/s, v = "+fmt(R.valim,2)+" m/s",["azevedo|"+PC,"nbr5648"]],
+   ["Carga disponível no alimentador","H = pressão mínima da rede (informada pela concessionária) − desnível − 1 mca de pressão mínima na saída","H = "+fmt(I.pMin,1)+" − "+fmt(I.dzAlim,1)+" − 1 = "+fmt(R.al.H,2)+" mca",["tigre|p. 39"]],
+   ["Vazão do alimentador","Fair-Whipple-Hsiao para PVC até 100 mm: J = 0,0008695 · Q^1,75 · D^−4,75 (SI), com J = H ÷ L. Q = (J · D^4,75 ÷ 0,0008695)^(1/1,75), limitada a v = 3 m/s","J = "+fmt(R.al.J,4)+" m/m, "+dn(R.dal)+" (Di = "+fmt(pvcByDn(R.dal).di,1)+" mm): Q = "+fmt(R.qal,2)+" L/s, v = "+fmt(R.valim,2)+" m/s",["tigre|p. 35","nbr5648"]],
    ["Reposição (6.7.2)","t = CD ÷ (Q × 3600) ≤ 6 h","t = "+fmt(R.cd)+" ÷ ("+fmt(R.qal,2)+" × 3600) = "+(isFinite(R.tRepReal)?fmt(R.tRepReal,1):"—")+" h",["nbr2020|item 6.7.2"]],
    ["Extravasor","Bitola comercial imediatamente superior à da entrada de água",dn(R.dexi)+", uma acima do alimentador "+dn(R.dal),["cj2023|p. 41"]],
-   ["Limpeza","Diâmetro não menor que 32 mm",dn(R.dli),["cj2023|p. 41"]]]}
+   ["Limpeza","Igual ou maior que a tubulação de entrada, e não menor que 32 mm",dn(R.dli)+", igual ao alimentador",["tigre|p. 74","cj2023|p. 41"]]]}
   ];
 }
 const cites=k=>k.length?"("+k.map(x=>{const[a,b]=x.split("|");return CIT[a]+(b?", "+b:"")}).join("; ")+")":"—";
@@ -1053,7 +1048,7 @@ function reportHTML(){
     balList(r).forEach(B=>{
       h+='<tr><td colspan="4" style="background:var(--panel-2);font-weight:700">Balão '+B.n+', '+esc(bNome(B,r))+(vis(B.n,r)==="ok"?' <span class="c">(concluído)</span>':'')+'</td></tr>';
       qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];
-        h+='<tr><td style="white-space:nowrap">'+q.it+'</td><td>'+esc(q.t)+'</td><td>'+(st==="na"?"—":esc(v==null?"—":v))+'</td><td class="'+(st==="c"?"c":st==="nc"?"nc":"na")+'">'+stLbl[st]+'</td></tr>'});
+        h+='<tr><td style="white-space:nowrap">'+q.it+'</td><td>'+esc(tx(q,r))+'</td><td>'+(st==="na"?"—":esc(v==null?"—":v))+'</td><td class="'+(st==="c"?"c":st==="nc"?"nc":"na")+'">'+stLbl[st]+'</td></tr>'});
       const ob=S.obs[r][B.n];if(ob)h+='<tr><td>Obs.</td><td colspan="3">'+esc(ob)+'</td></tr>';
     });
     const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
@@ -1115,7 +1110,7 @@ function reportPDF(){
     para(doc,"Checklist",{bold:true,size:10.5,color:[29,63,79],after:1});
     const body=[];
     balList(r).forEach(B=>{body.push([{content:"Balão "+B.n+", "+bNome(B,r)+(vis(B.n,r)==="ok"?" (concluído)":""),colSpan:4,styles:{fillColor:[241,245,246],fontStyle:"bold"}}]);
-      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];body.push([q.it,q.t,st==="na"?"—":(v==null?"—":String(v)),{content:stLbl[st],styles:{textColor:st==="c"?[43,138,87]:st==="nc"?[192,57,43]:[91,112,122],fontStyle:"bold"}}])});
+      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];body.push([q.it,tx(q,r),st==="na"?"—":(v==null?"—":String(v)),{content:stLbl[st],styles:{textColor:st==="c"?[43,138,87]:st==="nc"?[192,57,43]:[91,112,122],fontStyle:"bold"}}])});
       const ob=S.obs[r][B.n];if(ob)body.push(["Obs.",{content:ob,colSpan:3}])});
     const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
       body.push(["6.5.6.1",{content:"Interrupções: "+fmt(it.freq||0,1)+" por mês, média de "+fmt(it.dmed||0,1)+" h, maior de "+fmt(it.dmax||0,1)+" h"+(it.fonte?", fonte "+it.fonte:"")+". Autonomia adotada de "+fmt(R.autH,0)+" h.",colSpan:3}]);

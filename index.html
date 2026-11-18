@@ -601,7 +601,7 @@ function calc(){
   R.al=alimOf(pick("al",R.dalCalc),I,R.cd,R.vCapAl,R.nBoia);R.dal=R.al.de;R.qal=R.al.q;R.valim=R.al.v;R.tRepReal=R.al.tRep;
   /* Recalque: repõe o consumo diário em 6 h (6.7.2); diâmetro econômico por Forchheimer com X = 6/24 */
   /* Vazão mínima para repor o consumo diário em 6 h (6.7.2) */
-  R.qreq=R.cd/(T_REP*3600);R.qreqh=R.qreq*3.6;
+  R.qreq=R.cd/(T_REP*3600);R.qreqh=R.qreq*3.6;R.qmed=R.cd/86400;
   /* Conjunto motobomba: dados de cada bomba (placa ou catálogo) e tipo de ligação.
      Única: H(Q) = H0 − a·Q². Paralelo (n bombas iguais): H(Q) = H0 − a·(Q/n)². Série: H(Q) = n·(H0 − a·Q²).
      a passa pelo ponto (Qn, Hn) de cada bomba; H0 = altura máxima (shut-off) ou, se não informada, 1,2 × Hn */
@@ -963,25 +963,29 @@ const fitIn=(k,keys,de)=>'<div class="tbl-wrap"><table class="geo-t"><thead><tr>
 function buildDim(){
   const I=S.inp;
   document.getElementById("dimBody").innerHTML=
-  '<div class="sec-title"><span class="tag">A</span><h2>Consumo e reservas da edificação</h2></div><div class="grid2">'+
-   '<div class="card"><h3>Dados</h3>'+
+  '<div class="sec-title"><span class="tag">A</span><h2>Vazão de projeto</h2></div><div class="grid2">'+
+   '<div class="card"><h3>Consumo da edificação</h3>'+
     '<div class="f"><label for="i_tipo">Tipo de edificação</label><select id="i_tipo" data-k="tipo" style="grid-column:span 2">'+CONSUMO.map(c=>'<option'+(c[0]===I.tipo?" selected":"")+'>'+c[0]+'</option>').join("")+'</select></div>'+
     F("qAndar",'Quantidade por andar <span id="unitLbl"></span>',"por andar","1")+F("andares","Número de andares","andares","1")+
+    h3("Peças de utilização")+note("Peças por apartamento típico, método dos pesos, NBR 5626:1998, Anexo A.")+F("unid","Apartamentos por andar","unid.","1")+
+    '<div class="tbl-wrap"><table><thead><tr><th>Peça</th><th class="n">Peso</th><th class="n">Qtd.</th></tr></thead><tbody>'+
+    PESOS.map((p,i)=>'<tr><td>'+p[0]+'<br><small style="color:var(--ink-soft)">'+p[1]+'</small></td><td class="n">'+fmt(p[3],1)+'</td><td class="n"><input type="number" min="0" step="1" id="qtd_'+i+'" data-qtd="'+i+'" value="'+(I.qtd[i]||0)+'" aria-label="Quantidade de '+p[0]+', '+p[1]+'"></td></tr>').join("")+
+    '</tbody></table></div>'+
+   '</div><div class="card" id="resQ"></div></div>'+
+
+  '<div class="sec-title"><span class="tag">B</span><h2>Reservas da edificação</h2></div><div class="grid2">'+
+   '<div class="card"><h3>Dados</h3>'+
     F("dias","Dias de reservação (de 1 a 3)","dias","0.5","1","3")+F("tManut","Tempo normal de manutenção","h","0.5")+F("pctSup","Parcela do consumo no superior","%","1")+
     h3("Reserva técnica de incêndio")+note("Porcentagem do consumo diário. Fica no reservatório superior.")+F("pctInc","Reserva de incêndio","% do CD","1")+
    '</div><div class="card" id="resA"></div></div>'+
 
-  '<div class="sec-title"><span class="tag">B</span><h2>Reservatório superior</h2></div><div class="grid2">'+
+  '<div class="sec-title"><span class="tag">C</span><h2>Reservatório superior</h2></div><div class="grid2">'+
    '<div class="card"><h3>Dados do superior</h3>'+note("Informe o número de reservatórios e de compartimentos. Primeiro o compartimento menor; depois os outros compartimentos, com os mesmos dados. A altura útil (do fundo à lâmina d'água) é calculada pelo volume necessário. O superior deve ter no mínimo 2 compartimentos (6.5.6.5).")+
     geoIn("geoSup")+
    '</div><div class="card" id="resSup"></div></div>'+
-   '<div class="grid2" style="margin-top:20px">'+
-   '<div class="card"><h3>Saída do superior e barrilete</h3><p class="sub">Peças por apartamento típico, método dos pesos, NBR 5626:1998, Anexo A.</p>'+F("unid","Apartamentos por andar","unid.","1")+
-    '<div class="tbl-wrap"><table><thead><tr><th>Peça</th><th class="n">Peso</th><th class="n">Qtd.</th></tr></thead><tbody>'+
-    PESOS.map((p,i)=>'<tr><td>'+p[0]+'<br><small style="color:var(--ink-soft)">'+p[1]+'</small></td><td class="n">'+fmt(p[3],1)+'</td><td class="n"><input type="number" min="0" step="1" id="qtd_'+i+'" data-qtd="'+i+'" value="'+(I.qtd[i]||0)+'" aria-label="Quantidade de '+p[0]+', '+p[1]+'"></td></tr>').join("")+
-    '</tbody></table></div></div><div class="card" id="resSai"></div></div>'+
+   '<div class="grid2" style="margin-top:20px"><div class="card" id="resSai"></div></div>'+
 
-  '<div class="sec-title"><span class="tag">C</span><h2>Reservatório inferior</h2></div><div class="grid2">'+
+  '<div class="sec-title"><span class="tag">D</span><h2>Reservatório inferior</h2></div><div class="grid2">'+
    '<div class="card"><h3>Dados do inferior</h3>'+note("Informe o número de reservatórios e de compartimentos. Primeiro o compartimento menor; depois os outros compartimentos, com os mesmos dados. A altura útil (do fundo à lâmina d'água) é calculada pelo volume necessário.")+
     geoIn("geoInf")+
     h3("Entrada pelo alimentador predial")+note("A vazão é calculada pela pressão média de trabalho, pelo diâmetro e pelas perdas de carga do tubo, das conexões e da torneira de boia. O diâmetro calculado é o menor que repõe o consumo diário em 6 h com velocidade até 3 m/s.")+
@@ -990,7 +994,7 @@ function buildDim(){
     h3("Perdas de carga")+F("lAlim","Comprimento do tubo do alimentador","m","1","1")+note("Conexões do alimentador, incluindo a entrada de borda. A torneira de boia de alta vazão (uma por compartimento) entra automaticamente.")+'<div id="fitAl"></div>'+
    '</div><div class="card" id="resInf"></div></div>'+
 
-  '<div class="sec-title"><span class="tag">D</span><h2>Conjunto motobomba</h2></div><div class="grid2">'+
+  '<div class="sec-title"><span class="tag">E</span><h2>Conjunto motobomba</h2></div><div class="grid2">'+
    '<div class="card"><h3>Bomba</h3>'+note("Dados de cada bomba, da placa ou do catálogo. A altura máxima (shut-off) é opcional; com 0, o app estima 1,2 × a altura manométrica.")+
     '<div class="f"><label for="i_assoc">Ligação das bombas</label><select id="i_assoc" data-k="assoc" style="grid-column:span 2">'+[["unica","Bomba única"],["paralelo","Em paralelo"],["serie","Em série"]].map(o=>'<option value="'+o[0]+'"'+(I.assoc===o[0]?" selected":"")+'>'+o[1]+'</option>').join("")+'</select></div>'+
     (I.assoc==="paralelo"||I.assoc==="serie"?F("nBombas","Número de bombas iguais","bombas","1","2"):"")+
@@ -999,7 +1003,7 @@ function buildDim(){
     F("lRec","Comprimento da sucção e do recalque","m","1")+F("hgRec","Desnível geométrico (nível mínimo do inferior até a entrada do superior)","m","0.5")+'<div id="fitRec"></div>'+
    '</div><div class="card" id="resBomba"></div></div>'+
 
-  '<div class="sec-title"><span class="tag">E</span><h2>Diâmetros das tubulações</h2></div>'+
+  '<div class="sec-title"><span class="tag">F</span><h2>Diâmetros das tubulações</h2></div>'+
    '<div class="card"><p class="sub" style="margin-top:0">Cada diâmetro vem preenchido com o valor calculado. Para adotar outro, escolha na lista. A velocidade é sempre calculada. O app avisa quando algo não atende ao critério.</p><div id="tubAlert"></div><div id="tubos"></div></div>'+
   '<p class="foot-ref">Os diâmetros estão em DN (diâmetro nominal) de tubo de PVC soldável. As fórmulas e as referências de cada cálculo estão na aba Memorial. São diâmetros de pré-dimensionamento; o projeto executivo exige verificação completa de pressões e perdas de carga.</p>';
 }
@@ -1020,8 +1024,14 @@ function renderDimResults(){
   document.getElementById("bigNums").innerHTML=
    '<div><b>'+fmt(R.cd)+'</b><span>L/dia de consumo</span></div><div><b>'+fmt(R.vSup)+'</b><span>L no superior ('+R.nS+' reserv.)</span></div>'+
    '<div><b>'+fmt(R.vInf)+'</b><span>L no inferior ('+R.nI+' reserv.)</span></div><div><b>'+fmt(R.rInc)+'</b><span>L de reserva de incêndio</span></div>';
-  document.getElementById("resA").innerHTML='<h3>Resultados da edificação</h3>'+Rr("Consumo unitário",fmt(R.cu),"L/dia por "+R.unidade)+Rr("Quantidade total",fmt(R.qt),plural(R.unidade))+
-   Rr("Consumo diário (CD)",fmt(R.cd),"L/dia")+Rr("Reserva de consumo ("+fmt(R.dias,1)+" dia(s))",fmt(R.rCons),"L")+Rr("Reserva de manutenção ("+fmt(I.tManut,1)+" h)",fmt(R.rManut),"L")+
+  document.getElementById("resQ").innerHTML='<h3>Vazões de projeto</h3>'+
+   sub3("Consumo")+Rr("Consumo unitário",fmt(R.cu),"L/dia por "+R.unidade)+Rr("Quantidade total",fmt(R.qt),plural(R.unidade))+Rr("Consumo diário (CD)",fmt(R.cd),"L/dia")+
+   sub3("Abastecimento dos reservatórios")+Rr("Vazão média diária (CD ÷ 86.400 s)",fmt(R.qmed,2)+" L/s ("+fmt(R.qmed*3.6,2)+" m³/h)")+
+   Rr("Vazão de projeto do alimentador e do recalque (repor o CD em 6 h, item 6.7.2)",fmt(R.qreq,2)+" L/s ("+fmt(R.qreqh,2)+" m³/h)")+
+   sub3("Distribuição: saída do superior e barrilete")+Rr("Soma dos pesos por apartamento",fmt(R.pu,1),"ΣP")+Rr("Apartamentos abastecidos",fmt(R.nun))+Rr("Soma dos pesos total",fmt(R.pt,1),"ΣP")+
+   Rr("Vazão de projeto da distribuição (Q = 0,3·√ΣP)",fmt(R.qs,2),"L/s")+
+   ((+I.qtd[1]||0)>0&&R.pu>0?pillRow("warn","A válvula de descarga tem peso 32 e responde por "+fmt((+I.qtd[1])*32/R.pu*100,0)+"% da soma dos pesos. Confirme se o prédio usa válvula"):"");
+  document.getElementById("resA").innerHTML='<h3>Resultados das reservas</h3>'+Rr("Consumo diário (CD)",fmt(R.cd),"L/dia")+Rr("Reserva de consumo ("+fmt(R.dias,1)+" dia(s))",fmt(R.rCons),"L")+Rr("Reserva de manutenção ("+fmt(I.tManut,1)+" h)",fmt(R.rManut),"L")+
    Rr("Reserva técnica de incêndio ("+fmt(I.pctInc,0)+"% do CD)",fmt(R.rInc),"L")+Rr("Volume total reservado",fmt(R.vTot),"L")+Rr("Armazenamento sem incêndio",fmt(R.diasArm,1),"dias")+
    (R.diasFora?pillRow("bad","Dias de reservação fora do intervalo de 1 a 3 dias (itens 6.5.6.2 e 6.5.6.3). O cálculo usa "+fmt(R.dias,1)+" dia(s)"):pillRow("ok","Entre 24 h (6.5.6.2) e 3 dias de consumo (6.5.6.3)"));
   document.getElementById("resSup").innerHTML='<h3>Resultados do superior</h3>'+
@@ -1030,10 +1040,8 @@ function renderDimResults(){
    (R.supAum?pillRow("warn","A parcela do superior foi aumentada para que o menor compartimento atenda ao consumo no horário de pico durante a manutenção. O inferior foi reduzido na mesma medida"):"")+
    sub3("Compartimentos e dimensões")+camT(R.gS)+Rr("Volume do menor compartimento",fmt(R.vminS),"L")+pillRow(R.camChk[0],R.camChk[1])+
    '';
-  document.getElementById("resSai").innerHTML='<h3>Resultados da saída</h3>'+Rr("Soma dos pesos por apartamento",fmt(R.pu,1),"ΣP")+Rr("Apartamentos abastecidos",fmt(R.nun))+Rr("Soma dos pesos total",fmt(R.pt,1),"ΣP")+
-   Rr("Vazão de projeto (Q = 0,3·√ΣP)",fmt(R.qs,2),"L/s")+Rr("Saída de cada reservatório e barrilete",dn(R.dsai))+Rr("Velocidade",fmt(R.vsai,2),"m/s")+
-   pillRow(R.vsai<=VMAX+1e-9?"ok":"bad",R.vsai<=VMAX+1e-9?"Velocidade dentro do limite de 3 m/s":"Acima de 3 m/s")+((+I.qtd[1]||0)>0&&R.pu>0?pillRow("warn","A válvula de descarga tem peso 32 e responde por "+fmt((+I.qtd[1])*32/R.pu*100,0)+"% da soma dos pesos. Confirme se o prédio usa válvula"):"")+
-   '<p class="foot-ref">A saída de cada compartimento do superior é dimensionada para a vazão total, porque durante a manutenção um compartimento abastece sozinho o edifício.</p>';
+  document.getElementById("resSai").innerHTML='<h3>Saída do superior e barrilete</h3>'+Rr("Vazão de projeto da distribuição (item A)",fmt(R.qs,2),"L/s")+Rr("Saída de cada reservatório e barrilete",dn(R.dsai))+Rr("Velocidade",fmt(R.vsai,2),"m/s")+
+   pillRow(R.vsai<=VMAX+1e-9?"ok":"bad",R.vsai<=VMAX+1e-9?"Velocidade dentro do limite de 3 m/s":"Acima de 3 m/s")+'<p class="foot-ref">A saída de cada compartimento do superior é dimensionada para a vazão total, porque durante a manutenção um compartimento abastece sozinho o edifício.</p>';
   document.getElementById("resInf").innerHTML='<h3>Resultados do inferior</h3>'+
    sub3("Volume")+Rr("Consumo restante da reserva",fmt(R.cInf),"L")+Rr("Volume do inferior",fmt(R.vInf),"L")+
    sub3("Compartimentos e dimensões")+camT(R.gI)+pillRow(R.camChkI[0],R.camChkI[1])+
@@ -1164,8 +1172,12 @@ const MEMO=[
 function calcMemo(){
   const R=calc(),I=S.inp,man=(k,de)=>+R.dMan[k]?"; adotado manualmente "+dn(de):"";
   return [
-  {g:"Edificação",rows:[
+  {g:"Vazão de projeto",rows:[
    ["Consumo diário","CD = consumo per capita × população","CD = "+fmt(R.cu)+" × "+fmt(R.qt)+" = "+fmt(R.cd)+" L/dia",["tigre|p. 58-59"]],
+   ["Vazão média diária","Qméd = CD ÷ 86.400 s","Qméd = "+fmt(R.cd)+" ÷ 86.400 = "+fmt(R.qmed,2)+" L/s",[]],
+   ["Vazão de projeto do abastecimento","Alimentador e recalque devem repor o consumo diário em até 6 h: Q = CD ÷ (6 × 3600)","Q = "+fmt(R.cd)+" ÷ 21.600 = "+fmt(R.qreq,2)+" L/s ("+fmt(R.qreqh,2)+" m³/h)",["nbr2020|item 6.7.2"]],
+   ["Vazão de projeto da distribuição","Método dos pesos: Q = 0,3 · √ΣP","ΣP = "+fmt(R.pt,1)+"; Q = 0,3 × √"+fmt(R.pt,1)+" = "+fmt(R.qs,2)+" L/s",["nbr1998|Anexo A","tigre|p. 64 e 68"]]]},
+  {g:"Reservas da edificação",rows:[
    ["Reserva de consumo","Rc = CD × dias de reservação, entre 1 dia (item 6.5.6.2) e 3 dias (nota do item 6.5.6.3); usual de 2 dias","Rc = "+fmt(R.cd)+" × "+fmt(R.dias,1)+" = "+fmt(R.rCons)+" L",["nbr2020|itens 6.5.6.2 e 6.5.6.3","tigre|p. 60"]],
    ["Reserva de manutenção","Consumo no horário de pico durante a manutenção: Rm = CD × tempo normal de manutenção ÷ 24 (12 h, proposta do TCC)","Rm = "+fmt(R.cd)+" × "+fmt(I.tManut,1)+" ÷ 24 = "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5","tcc"]],
    ["Reserva técnica de incêndio","RTI = porcentagem × CD. Em prédios, acrescentam-se de 15% a 20% do consumo para reserva de incêndio. Para aprovação, prevalece a norma do Corpo de Bombeiros (no Ceará, NT 006/2008, Tabela 3)","RTI = "+fmt(I.pctInc,0)+"% × "+fmt(R.cd)+" = "+fmt(R.rInc)+" L",["tigre|p. 60","cbmce|item 4.9.2"]],
@@ -1227,7 +1239,7 @@ function dimRows(R){const I=S.inp,ok=b=>b?"atende":"não atende",
  comp=g=>g.list.map((c,i)=>[(c.nc>1?"Compartimento "+c.r+"."+c.k:"Reservatório "+c.r)+(g.n>1&&i===g.iMin?" (menor)":""),fmt(c.c,2)+" × "+fmt(c.l,2)+" m; altura útil "+fmt(c.hu,2)+" m; altura total "+fmt(c.ht,2)+" m; "+fmt(c.v)+" L"+(c.ht<c.hu-1e-9?" (altura total menor que a útil)":"")]),
  AS={unica:"Bomba única",paralelo:R.nb+" bombas iguais em paralelo",serie:R.nb+" bombas iguais em série"}[R.assoc];
  return {
- geral:[["Tipo de edificação",esc(I.tipo)],["Quantidade total",fmt(R.qt)+" "+plural(R.unidade)+" ("+I.qAndar+" por andar em "+I.andares+" andares)"],["Consumo diário",fmt(R.cd)+" L/dia"],
+ geral:[["Tipo de edificação",esc(I.tipo)],["Quantidade total",fmt(R.qt)+" "+plural(R.unidade)+" ("+I.qAndar+" por andar em "+I.andares+" andares)"],["Consumo diário",fmt(R.cd)+" L/dia"],["Vazão média diária",fmt(R.qmed,2)+" L/s ("+fmt(R.qmed*3.6,2)+" m³/h)"],["Vazão de projeto do abastecimento (repor o CD em 6 h)",fmt(R.qreq,2)+" L/s ("+fmt(R.qreqh,2)+" m³/h)"],["Vazão de projeto da distribuição (0,3·√ΣP)",fmt(R.qs,2)+" L/s (ΣP = "+fmt(R.pt,1)+")"],
   ["Reserva de consumo",fmt(R.rCons)+" L ("+fmt(R.dias,1)+" dia(s))"],["Reserva de manutenção",fmt(R.rManut)+" L ("+fmt(I.tManut,1)+" h)"],["Reserva técnica de incêndio",fmt(R.rInc)+" L ("+fmt(I.pctInc,0)+"% do consumo diário)"],
   ["Volume total reservado",fmt(R.vTot)+" L"],["Armazenamento sem incêndio",fmt(R.diasArm,1)+" dias"]],
  sup:[["Consumo no superior",fmt(R.cSup)+" L"+(R.supAum?" (ajustado de "+fmt(R.cSupPct)+" L para atender à manutenção)":" ("+fmt(I.pctSup,0)+"% da reserva de consumo)")],["Reserva de incêndio",fmt(R.rInc)+" L"],
@@ -1261,7 +1273,7 @@ function dimReportHTML(){
    '<dt>Responsável técnico</dt><dd class="g-blank"></dd><dt>Data</dt><dd>'+dt+'</dd></dl>'+
    '<div class="g-nums"><div><b>'+fmt(R.cd)+'</b><span>L/dia de consumo</span></div><div><b>'+fmt(R.vSup)+'</b><span>L no superior</span></div>'+
    '<div><b>'+fmt(R.vInf)+'</b><span>L no inferior</span></div><div><b>'+fmt(R.qefh,2)+'</b><span>m³/h na saída do recalque</span></div></div>';
-  h+=sec(1,"Edificação")+rowsT(DR.geral);
+  h+=sec(1,"Vazão de projeto e reservas")+rowsT(DR.geral);
   h+=sec(2,"Reservatório superior")+rowsT(DR.sup.filter(r=>r[0]!=="Entrada pelo recalque"));
   h+=sec(3,"Reservatório inferior")+rowsT(DR.inf);
   h+=sec(4,"Conjunto motobomba")+rowsT(DR.mb);
@@ -1291,7 +1303,7 @@ function dimReportPDF(){
   const nums=[[fmt(R.cd),"L/dia de consumo"],[fmt(R.vSup),"L no superior"],[fmt(R.vInf),"L no inferior"],[fmt(R.qefh,2),"m³/h na saída do recalque"]];
   nums.forEach((n,i)=>{const x=15+i*45.5;doc.setFillColor(i%2?236:226);doc.rect(x,doc.__y,43.5,16,"F");doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(25);doc.text(pdfTxt(n[0]),x+3,doc.__y+7.5);
     doc.setFont("helvetica","normal");doc.setFontSize(7.8);doc.setTextColor(85);doc.text(pdfTxt(n[1]),x+3,doc.__y+12.8)});doc.__y+=22;
-  sec(1,"Edificação");kv(DR.geral);
+  sec(1,"Vazão de projeto e reservas");kv(DR.geral);
   sec(2,"Reservatório superior");kv(DR.sup.filter(r=>r[0]!=="Entrada pelo recalque"));
   sec(3,"Reservatório inferior");kv(DR.inf);
   sec(4,"Conjunto motobomba");kv(DR.mb);

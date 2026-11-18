@@ -310,7 +310,7 @@ input.vel{width:78px;text-align:right}
 .paper.gray .g-chk .g-grp td{background:#d6d6d6;font-weight:700;color:#111}.paper.gray .g-chk .g-grp small{font-weight:500;color:#444}
 .paper.gray .g-chk tbody tr:nth-child(even):not(.g-grp){background:#f6f6f6}
 .paper.gray .g-mute{color:#777;font-size:12.5px}
-.g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}.uq-bar{margin:14px 0 6px;padding:8px 16px}.uq-bar .f{border:0;margin:0}
+.g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}.uq-bar{margin:14px 0 6px;padding:8px 16px}.pill,.pill.ok,.pill.bad,.pill.warn{background:none;padding:0;border-radius:0;display:inline}.uq-bar .f{border:0;margin:0}
 </style>
 
 <header class="top">
@@ -1040,7 +1040,7 @@ function renderDimResults(){
    Rr("Reserva técnica de incêndio ("+fmt(I.pctInc,0)+"% do CD)",fmt(R.rInc),"L")+Rr("Volume total reservado",fmt(R.vTot),"L")+Rr("Armazenamento sem incêndio",fmt(R.diasArm,1),"dias")+
    (R.diasFora?pillRow("bad","Dias de reservação fora do intervalo de 1 a 3 dias (itens 6.5.6.2 e 6.5.6.3). O cálculo usa "+fmt(R.dias,1)+" dia(s)"):pillRow("ok","Entre 24 h (6.5.6.2) e 3 dias de consumo (6.5.6.3)"));
   document.getElementById("resSup").innerHTML='<h3>Resultados do superior</h3>'+
-   sub3("Volume")+Rr("Consumo ("+fmt(I.pctSup,0)+"% da reserva de consumo)",fmt(R.cSupPct),"L")+(R.supAum?Rr("Consumo ajustado para a manutenção (6.5.6.5)",fmt(R.cSup),"L"):"")+Rr("Reserva de incêndio",R.rtiProp?"em reservatório próprio":fmt(R.rInc)+" L")+
+   sub3("Volume")+Rr("Consumo ("+fmt(I.pctSup,0)+"% da reserva de consumo)",fmt(R.cSupPct),"L")+(R.supAum?Rr("Consumo ajustado para a manutenção (6.5.6.5)",fmt(R.cSup),"L"):"")+Rr("Reserva de incêndio",R.rtiProp?"em reservatório próprio":fmt(R.rInc),R.rtiProp?"":"L")+
    Rr("Volume do superior",fmt(R.vSup),"L")+
    (R.supAum?pillRow("warn","A parcela do superior foi aumentada para que "+(R.gS.iguais?"cada compartimento":"o menor compartimento")+" atenda ao consumo no horário de pico durante a manutenção. O inferior foi reduzido na mesma medida"):"")+
    sub3("Compartimentos e dimensões")+camT(R.gS)+(R.rIncSup>0&&R.nS>1?Object.keys(R.incRes).map(r=>Rr("Reserva de incêndio no reservatório "+r,fmt(R.incRes[r]),"L")).join(""):"")+Rr(R.gS.iguais?"Volume de cada compartimento":"Volume do menor compartimento",fmt(R.vminS),"L")+pillRow(R.camChk[0],R.camChk[1])+

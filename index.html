@@ -613,7 +613,7 @@ const Q=[
  {id:"q45",it:"6.5.6.1",bs:1,bi:1,inter:true,t:"Na definição da capacidade total da reservação de água potável foram consideradas a frequência e a duração das interrupções do abastecimento?",conf:yes},
  {id:"e2",it:"6.5.6.2",bs:1,bi:1,t:"O volume total atende no mínimo 24 h de consumo?",conf:yes,
    help:R=>"Pelo dimensionamento, o volume reservado sem a reserva de incêndio equivale a "+fmt(R.autH,0)+" h de consumo ("+fmt(R.cd)+" L/dia)."},
- {id:"e3",it:"6.5.6.2",bs:1,bi:1,t:"Há reservação de incêndio?",conf:any,
+ {id:"e3",it:"6.5.6.2",bs:1,t:"Há reservação de incêndio?",conf:any,
    help:R=>"Pelo dimensionamento, a reserva técnica de incêndio é de "+fmt(R.rInc)+" L ("+fmt(S.inp.pctInc,0)+"% do consumo diário). Ela fica no reservatório superior."},
  {id:"e4",it:"6.5.6.3",bs:1,bi:1,t:"A reservação total está limitada a 3 dias de consumo diário?",conf:any,
    help:R=>"Pelo dimensionamento, o volume reservado sem a reserva de incêndio equivale a "+fmt(R.diasArm,1)+" dia(s) de consumo."},

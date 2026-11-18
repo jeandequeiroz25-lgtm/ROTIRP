@@ -305,6 +305,11 @@ input.vel{width:78px;text-align:right}
 .paper.gray .sign div{border-top-color:#1a1a1a}
 @media (max-width:700px){.paper.gray .g-top{margin:-26px -20px 18px;padding:20px}.paper.gray .g-nums{grid-template-columns:1fr 1fr}.paper.gray .g-meta{grid-template-columns:1fr}.paper.gray .g-kv th{width:45%}}
 @media print{.paper.gray .g-top{margin:0 0 18px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.paper.gray *{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.paper.gray .g-verdict{margin:14px 0 4px;padding:12px 16px;background:#ececec;border-left:5px solid #222;color:#1a1a1a}
+.paper.gray .g-verdict.ok{font-weight:700}.paper.gray .g-verdict ul{margin:6px 0 0;padding-left:20px}
+.paper.gray .g-chk .g-grp td{background:#d6d6d6;font-weight:700;color:#111}.paper.gray .g-chk .g-grp small{font-weight:500;color:#444}
+.paper.gray .g-chk tbody tr:nth-child(even):not(.g-grp){background:#f6f6f6}
+.paper.gray .g-mute{color:#777;font-size:12.5px}
 </style>
 
 <header class="top">
@@ -419,7 +424,7 @@ input.vel{width:78px;text-align:right}
     <button class="btn" id="repPrint" hidden>Imprimir</button>
     <span class="note" id="repNote"></span>
   </div>
-  <article class="paper" id="report"></article>
+  <article class="paper gray" id="report"></article>
   </div>
   <div id="repDim" hidden>
   <div class="rep-actions">
@@ -1217,33 +1222,6 @@ function missing(){
   return out;
 }
 const stLbl={c:"Conforme",nc:"Não conforme",na:"Não se aplica",nv:"Não verificável",pend:"Sem resposta"};
-function reportHTML(){
-  const R=calc(),P=S.proj,miss=missing(),complete=miss.length===0;
-  const dt=P.data?new Date(P.data+"T12:00:00").toLocaleDateString("pt-BR"):"";
-  let h='<h1>Relatório de conformidade dos reservatórios de água fria</h1>'+
-   '<p style="margin:4px 0 0;color:var(--ink-soft)">Verificação dos itens 6.5.1 a 6.5.10 da ABNT NBR 5626:2020 nos reservatórios superior e inferior</p>'+
-   '<dl class="meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Endereço da obra</dt><dd>'+esc(P.endereco)+'</dd><dt>Cliente</dt><dd>'+esc(P.cliente)+'</dd><dt>Responsável técnico</dt><dd>'+esc(P.resp)+(P.registro?", CREA ou CAU "+esc(P.registro):"")+'</dd><dt>Data de conclusão da obra</dt><dd>'+(P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):"")+'</dd><dt>Encarregado</dt><dd>'+esc(P.encarregado||"")+'</dd><dt>Data da inspeção</dt><dd>'+dt+'</dd></dl>';
-  h+=complete?'<div class="verdict ok">Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens 6.5.1 a 6.5.10.</div>'
-   :'<div class="verdict warn">Relatório incompleto. A inspeção ainda não foi concluída. Superior com '+okCount("sup")+' de '+nBal("sup")+' pontos e inferior com '+okCount("inf")+' de '+nBal("inf")+' pontos em conformidade. Falta concluir<ul>'+miss.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul></div>';
-  const DR=dimRows(R),rowsT=a=>'<table><tbody>'+a.map(r=>'<tr><td style="width:42%;color:var(--ink-soft)">'+r[0]+'</td><td><b>'+r[1]+'</b></td></tr>').join("")+'</tbody></table>';
-  const tubR=a=>'<div class="tbl-wrap"><table><thead><tr><th>Tubulação</th><th>Diâmetro</th><th>Vazão</th><th>Velocidade</th><th>Registro ou válvula</th><th>Situação</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+x.n+'</td><td style="white-space:nowrap">'+dn(x.de)+'</td><td style="white-space:nowrap">'+(x.q!=null?fmt(x.q,2)+' L/s':'—')+'</td><td style="white-space:nowrap">'+(x.v!=null?fmt(x.v,2)+' m/s':'—')+'</td><td>'+x.reg+'</td><td>'+esc(x.chk[1])+'</td></tr>').join("")+'</tbody></table></div>';
-  ["sup","inf"].forEach((r,k)=>{
-    h+='<h2>'+(1+k)+'. '+RESC[r]+'</h2>';
-    h+='<h3>Checklist</h3><div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Verificação</th><th>Resposta</th><th>Situação</th></tr></thead><tbody>';
-    balList(r).forEach(B=>{
-      h+='<tr><td colspan="4" style="background:var(--panel-2);font-weight:700">Balão '+B.n+', '+esc(bNome(B,r))+(vis(B.n,r)==="ok"?' <span class="c">(concluído)</span>':'')+'</td></tr>';
-      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];
-        h+='<tr><td style="white-space:nowrap">'+q.it+'</td><td>'+esc(tx(q,r))+'</td><td>'+(st==="na"?"—":esc(v==null?"—":v))+'</td><td class="'+(st==="c"?"c":st==="nc"?"nc":"na")+'">'+stLbl[st]+'</td></tr>'});
-      const ob=S.obs[r][B.n];if(ob)h+='<tr><td>Obs.</td><td colspan="3">'+esc(ob)+'</td></tr>';
-    });
-    const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
-      h+='<tr><td>6.5.6.1</td><td colspan="3">Interrupções registradas: '+fmt(it.freq||0,1)+' por mês, duração média de '+fmt(it.dmed||0,1)+' h e maior duração de '+fmt(it.dmax||0,1)+' h'+(it.fonte?" (fonte: "+esc(it.fonte)+")":"")+'. Autonomia adotada de '+fmt(R.autH,0)+' h.</td></tr>';
-    h+='</tbody></table></div>';
-  });
-  h+='<div class="sign"><div>Jean de Queiroz Macedo<br>Aluno IFCE - mat. 20232015050122</div><div>Técnico Responsável</div></div>'+
-   '<div class="refs"><p>Referências: ver a aba Memorial. Os diâmetros são pré-dimensionamento pela vazão e o projeto executivo requer verificação de pressões e perdas de carga.</p></div>';
-  return h;
-}
 function dimRows(R){const I=S.inp,ok=b=>b?"atende":"não atende",
  comp=g=>g.list.map((c,i)=>[(c.nc>1?"Compartimento "+c.r+"."+c.k:"Reservatório "+c.r)+(g.n>1&&i===g.iMin?" (menor)":""),fmt(c.c,2)+" × "+fmt(c.l,2)+" m; altura útil "+fmt(c.hu,2)+" m; altura total "+fmt(c.ht,2)+" m; "+fmt(c.v)+" L"+(c.ht<c.hu-1e-9?" (altura total menor que a útil)":"")]),
  AS={unica:"Bomba única",paralelo:R.nb+" bombas iguais em paralelo",serie:R.nb+" bombas iguais em série"}[R.assoc];
@@ -1348,30 +1326,77 @@ function table(doc,headR,body,extra={}){doc.autoTable(Object.assign({head:headR?
   styles:{font:"helvetica",fontSize:8.5,cellPadding:1.6,textColor:[27,43,50],lineColor:[205,217,221],lineWidth:.1},headStyles:{fillColor:[29,63,79],textColor:255},theme:"grid"},extra));doc.__y=doc.lastAutoTable.finalY+5}
 function footer(doc){const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(120);doc.text(pdfTxt(S.proj.nome+" · NBR 5626:2020 · página "+i+" de "+n),15,290)}}
 function slug(s){return (s||"projeto").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}
-function reportPDF(){
-  const R=calc(),P=S.proj,miss=missing();
-  const doc=newDoc("Relatório de conformidade dos reservatórios de água fria","Itens 6.5.1 a 6.5.10 da ABNT NBR 5626:2020, reservatórios superior e inferior");if(!doc)return null;
+/* ============ RELATÓRIO DE CONFORMIDADE (escala de cinza) ============ */
+const stCls={c:"g-ok",nc:"g-bad",pend:"g-warn"};
+function confCount(){const n={c:0,nc:0,pend:0,na:0,nv:0};["sup","inf"].forEach(r=>balList(r).forEach(B=>qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r);n[st]=(n[st]||0)+1})));return n}
+function reportHTML(){
+  const R=calc(),P=S.proj,miss=missing(),complete=miss.length===0,N=confCount();
   const dt=P.data?new Date(P.data+"T12:00:00").toLocaleDateString("pt-BR"):"";
-  table(doc,null,[["Projeto",P.nome],["Endereço da obra",P.endereco],["Cliente",P.cliente],["Responsável técnico",P.resp+(P.registro?", CREA ou CAU "+P.registro:"")],["Data de conclusão da obra",P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):""],["Encarregado",P.encarregado||""],["Data da inspeção",dt]],{theme:"plain",columnStyles:{0:{fontStyle:"bold",cellWidth:45}}});
-  if(miss.length){
-    doc.setFillColor(251,240,217);doc.setDrawColor(201,138,18);
-    para(doc,"RELATÓRIO INCOMPLETO",{bold:true,size:12,color:[192,57,43],after:1});
-    para(doc,"A inspeção ainda não foi concluída. Superior com "+okCount("sup")+" de "+nBal("sup")+" pontos e inferior com "+okCount("inf")+" de "+nBal("inf")+" pontos em conformidade. Falta concluir os pontos abaixo.",{after:1});
-    miss.forEach(m=>para(doc,"• "+m.txt,{size:9.5,x:18,w:176,after:.5}));doc.__y+=3;
-  }else para(doc,"Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens 6.5.1 a 6.5.10.",{bold:true,color:[43,138,87]});
+  let h='<header class="g-top"><p class="g-kicker">ROTIRP · NBR 5626:2020</p><h1>Relatório de conformidade dos reservatórios de água fria</h1>'+
+   '<p class="g-sub">Verificação dos itens 6.5.1 a 6.5.10 da ABNT NBR 5626:2020 nos reservatórios superior e inferior</p></header>'+
+   '<dl class="g-meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Endereço da obra</dt><dd>'+esc(P.endereco)+'</dd><dt>Cliente</dt><dd>'+esc(P.cliente)+'</dd><dt>Responsável técnico</dt><dd>'+esc(P.resp)+(P.registro?", CREA ou CAU "+esc(P.registro):"")+'</dd>'+
+   '<dt>Data de conclusão da obra</dt><dd>'+(P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):"")+'</dd><dt>Encarregado</dt><dd>'+esc(P.encarregado||"")+'</dd><dt>Data da inspeção</dt><dd>'+dt+'</dd></dl>'+
+   '<div class="g-nums"><div><b>'+okCount("sup")+' de '+nBal("sup")+'</b><span>pontos conformes no superior</span></div><div><b>'+okCount("inf")+' de '+nBal("inf")+'</b><span>pontos conformes no inferior</span></div>'+
+   '<div><b>'+N.nc+'</b><span>respostas não conformes</span></div><div><b>'+N.pend+'</b><span>perguntas sem resposta</span></div></div>';
+  h+=complete?'<div class="g-verdict ok">Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens 6.5.1 a 6.5.10.</div>'
+   :'<div class="g-verdict"><b>Relatório incompleto.</b> A inspeção ainda não foi concluída. Falta concluir<ul>'+miss.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul></div>';
   ["sup","inf"].forEach((r,k)=>{
-    head2(doc,(1+k)+". "+RESC[r]);
-    para(doc,"Checklist",{bold:true,size:10.5,color:[29,63,79],after:1});
+    h+='<h2 class="g-h2"><span>'+(1+k)+'</span>'+RESC[r]+'</h2><div class="tbl-wrap"><table class="g-t g-chk"><thead><tr><th>Item</th><th>Verificação</th><th>Resposta</th><th>Situação</th></tr></thead><tbody>';
+    balList(r).forEach(B=>{
+      h+='<tr class="g-grp"><td colspan="4">Balão '+B.n+', '+esc(bNome(B,r))+(vis(B.n,r)==="ok"?' <small>(concluído)</small>':'')+'</td></tr>';
+      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];
+        h+='<tr><td class="n">'+q.it+'</td><td>'+esc(tx(q,r))+'</td><td>'+(st==="na"?"—":esc(v==null?"—":v))+'</td><td class="n">'+(stCls[st]?'<span class="g-st '+stCls[st]+'">'+stLbl[st]+'</span>':'<span class="g-mute">'+stLbl[st]+'</span>')+'</td></tr>'});
+      const ob=S.obs[r][B.n];if(ob)h+='<tr><td class="n">Obs.</td><td colspan="3">'+esc(ob)+'</td></tr>';
+    });
+    const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
+      h+='<tr><td class="n">6.5.6.1</td><td colspan="3">Interrupções registradas: '+fmt(it.freq||0,1)+' por mês, duração média de '+fmt(it.dmed||0,1)+' h e maior duração de '+fmt(it.dmax||0,1)+' h'+(it.fonte?" (fonte: "+esc(it.fonte)+")":"")+'. Autonomia adotada de '+fmt(R.autH,0)+' h.</td></tr>';
+    h+='</tbody></table></div>';
+  });
+  h+='<p class="g-foot">Os resultados de volumes, diâmetros e do conjunto motobomba estão no relatório de dimensionamento. As referências estão no memorial de cálculo.</p>'+
+   '<div class="sign"><div>Jean de Queiroz Macedo<br>Aluno IFCE - mat. 20232015050122</div><div>Técnico Responsável</div></div>';
+  return h;
+}
+function reportPDF(){
+  const J=window.jspdf&&window.jspdf.jsPDF;if(!J)return null;
+  const R=calc(),P=S.proj,miss=missing(),N=confCount(),dt=P.data?new Date(P.data+"T12:00:00").toLocaleDateString("pt-BR"):"";
+  const doc=new J({unit:"mm",format:"a4"});
+  doc.setFillColor(34,34,34);doc.rect(0,0,210,30,"F");
+  doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(190);doc.text("ROTIRP - NBR 5626:2020",15,10);
+  doc.setFont("helvetica","bold");doc.setFontSize(14.5);doc.setTextColor(255);doc.text(pdfTxt("Relatório de conformidade dos reservatórios de água fria"),15,19);
+  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(200);doc.text(pdfTxt("Itens 6.5.1 a 6.5.10 da ABNT NBR 5626:2020, reservatórios superior e inferior"),15,25.5);
+  doc.__y=38;
+  const G={styles:{font:"helvetica",fontSize:8.5,cellPadding:1.8,textColor:[25,25,25],lineColor:[190,190,190],lineWidth:.1},headStyles:{fillColor:[64,64,64],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[244,244,244]},theme:"grid"};
+  const tbl=(head,body,extra={})=>table(doc,head,body,Object.assign({},G,extra));
+  const sec=(n,t)=>{if(doc.__y>262){doc.addPage();doc.__y=18}doc.__y+=2;doc.setFillColor(64,64,64);doc.rect(15,doc.__y-4.6,8,6.6,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(255);doc.text(String(n),19,doc.__y,{align:"center"});
+    doc.setTextColor(25);doc.setFontSize(12);doc.text(pdfTxt(t),26,doc.__y);doc.setDrawColor(150);doc.setLineWidth(.3);doc.line(15,doc.__y+2.6,195,doc.__y+2.6);doc.__y+=7};
+  tbl(null,[["Projeto",P.nome],["Endereço da obra",P.endereco],["Cliente",P.cliente],["Responsável técnico",P.resp+(P.registro?", CREA ou CAU "+P.registro:"")],["Data de conclusão da obra",P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):""],["Encarregado",P.encarregado||""],["Data da inspeção",dt]],
+    {columnStyles:{0:{cellWidth:50,fontStyle:"bold",fillColor:[232,232,232]}},alternateRowStyles:{}});
+  const nums=[[okCount("sup")+" de "+nBal("sup"),"pontos conformes no superior"],[okCount("inf")+" de "+nBal("inf"),"pontos conformes no inferior"],[String(N.nc),"respostas não conformes"],[String(N.pend),"perguntas sem resposta"]];
+  nums.forEach((n,i)=>{const x=15+i*45.5;doc.setFillColor(i%2?236:226);doc.rect(x,doc.__y,43.5,16,"F");doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(25);doc.text(pdfTxt(n[0]),x+3,doc.__y+7.5);
+    doc.setFont("helvetica","normal");doc.setFontSize(7.8);doc.setTextColor(85);doc.text(pdfTxt(n[1]),x+3,doc.__y+12.8)});doc.__y+=21;
+  /* parecer: faixa cinza com barra escura à esquerda */
+  const vt=miss.length?["RELATÓRIO INCOMPLETO","A inspeção ainda não foi concluída. Falta concluir os pontos abaixo."]:["EM CONFORMIDADE","Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens 6.5.1 a 6.5.10."];
+  doc.setFont("helvetica","normal");doc.setFontSize(9.5);const vl=doc.splitTextToSize(pdfTxt(vt[1]),170),vh=9+vl.length*4.3;
+  doc.setFillColor(236,236,236);doc.rect(15,doc.__y,180,vh,"F");doc.setFillColor(34,34,34);doc.rect(15,doc.__y,2.2,vh,"F");
+  doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(25);doc.text(pdfTxt(vt[0]),21,doc.__y+6);
+  doc.setFont("helvetica","normal");doc.setFontSize(9.5);doc.setTextColor(50);doc.text(vl,21,doc.__y+11);doc.__y+=vh+4;
+  if(miss.length){miss.forEach(m=>para(doc,"• "+m.txt,{size:9,x:18,w:176,after:.5,color:[50,50,50]}));doc.__y+=3}
+  ["sup","inf"].forEach((r,k)=>{
+    sec(1+k,RESC[r]);
     const body=[];
-    balList(r).forEach(B=>{body.push([{content:"Balão "+B.n+", "+bNome(B,r)+(vis(B.n,r)==="ok"?" (concluído)":""),colSpan:4,styles:{fillColor:[241,245,246],fontStyle:"bold"}}]);
-      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];body.push([q.it,tx(q,r),st==="na"?"—":(v==null?"—":String(v)),{content:stLbl[st],styles:{textColor:st==="c"?[43,138,87]:st==="nc"?[192,57,43]:[91,112,122],fontStyle:"bold"}}])});
+    balList(r).forEach(B=>{body.push([{content:"Balão "+B.n+", "+bNome(B,r)+(vis(B.n,r)==="ok"?" (concluído)":""),colSpan:4,styles:{fillColor:[214,214,214],fontStyle:"bold",textColor:[25,25,25]}}]);
+      qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];
+        const sty=st==="c"?{fillColor:[224,224,224],textColor:[25,25,25],fontStyle:"bold"}:st==="nc"?{fillColor:[26,26,26],textColor:255,fontStyle:"bold"}:st==="pend"?{fillColor:[150,150,150],textColor:255,fontStyle:"bold"}:{textColor:[110,110,110]};
+        body.push([q.it,tx(q,r),st==="na"?"—":(v==null?"—":String(v)),{content:stLbl[st],styles:sty}])});
       const ob=S.obs[r][B.n];if(ob)body.push(["Obs.",{content:ob,colSpan:3}])});
     const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
       body.push(["6.5.6.1",{content:"Interrupções: "+fmt(it.freq||0,1)+" por mês, média de "+fmt(it.dmed||0,1)+" h, maior de "+fmt(it.dmax||0,1)+" h"+(it.fonte?", fonte "+it.fonte:"")+". Autonomia adotada de "+fmt(R.autH,0)+" h.",colSpan:3}]);
-    table(doc,["Item","Verificação","Resposta","Situação"],body,{columnStyles:{0:{cellWidth:20},2:{cellWidth:26},3:{cellWidth:26}}});
+    tbl(["Item","Verificação","Resposta","Situação"],body,{columnStyles:{0:{cellWidth:20},2:{cellWidth:26},3:{cellWidth:27}}});
   });
-  if(doc.__y>255){doc.addPage();doc.__y=30}doc.__y+=18;doc.setDrawColor(27,43,50);doc.line(20,doc.__y,95,doc.__y);doc.line(115,doc.__y,190,doc.__y);
-  doc.setFontSize(9);doc.setTextColor(27,43,50);doc.text(pdfTxt("Jean de Queiroz Macedo"),57.5,doc.__y+5,{align:"center"});doc.text(pdfTxt("Aluno IFCE - mat. 20232015050122"),57.5,doc.__y+9.5,{align:"center"});doc.text(pdfTxt("Técnico Responsável"),152.5,doc.__y+5,{align:"center"});doc.__y+=5;
+  para(doc,"Os resultados de volumes, diâmetros e do conjunto motobomba estão no relatório de dimensionamento. As referências estão no memorial de cálculo.",{size:8.5,color:[90,90,90]});
+  if(doc.__y>255){doc.addPage();doc.__y=30}doc.__y+=18;doc.setDrawColor(40);doc.setLineWidth(.2);doc.line(20,doc.__y,95,doc.__y);doc.line(115,doc.__y,190,doc.__y);
+  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(25);doc.text(pdfTxt("Jean de Queiroz Macedo"),57.5,doc.__y+5,{align:"center"});doc.text(pdfTxt("Aluno IFCE - mat. 20232015050122"),57.5,doc.__y+9.5,{align:"center"});doc.text(pdfTxt("Técnico Responsável"),152.5,doc.__y+5,{align:"center"});
   footer(doc);return {doc,name:"relatorio-"+(miss.length?"incompleto-":"")+slug(P.nome)+".pdf"};
 }
 function memoPDF(){

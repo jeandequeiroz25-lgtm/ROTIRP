@@ -310,6 +310,7 @@ input.vel{width:78px;text-align:right}
 .paper.gray .g-chk .g-grp td{background:#d6d6d6;font-weight:700;color:#111}.paper.gray .g-chk .g-grp small{font-weight:500;color:#444}
 .paper.gray .g-chk tbody tr:nth-child(even):not(.g-grp){background:#f6f6f6}
 .paper.gray .g-mute{color:#777;font-size:12.5px}
+.g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}
 </style>
 
 <header class="top">
@@ -1092,7 +1093,7 @@ dimEl.addEventListener("input",e=>{
 /* ============ PROJETO ============ */
 function buildProj(){
   const P=S.proj,fld=(k,l,type="text")=>'<div class="f" style="grid-template-columns:1fr 1.4fr"><label for="p_'+k+'">'+l+'</label><input type="'+type+'" id="p_'+k+'" data-p="'+k+'" value="'+esc(P[k]||"")+'" style="text-align:left"></div>';
-  document.getElementById("projForm").innerHTML=fld("nome","Nome do projeto")+fld("endereco","Endereço da obra")+fld("cliente","Cliente ou proprietário")+fld("resp","Responsável técnico")+fld("registro","Registro CREA ou CAU")+fld("conclusao","Data de conclusão da obra","date")+fld("encarregado","Encarregado")+'<p style="margin:2px 0 10px;font-size:13px;line-height:1.4;color:var(--ink-soft)">Encarregado é a pessoa que informa sobre o funcionamento e os dados dos reservatórios.</p>'+fld("data","Data da inspeção","date");
+  document.getElementById("projForm").innerHTML=fld("nome","Nome do projeto")+fld("endereco","Endereço da obra")+fld("cliente","Cliente ou proprietário")+fld("conclusao","Data de conclusão da obra","date")+fld("encarregado","Encarregado")+'<p style="margin:2px 0 10px;font-size:13px;line-height:1.4;color:var(--ink-soft)">Encarregado é a pessoa que informa sobre o funcionamento e os dados dos reservatórios.</p>'+fld("data","Data da inspeção","date");
   document.getElementById("ocupForm").innerHTML='<p class="sub" style="margin-top:0">Tipo de edificação, quantidades e reservas são editados na aba Dimensionamento.</p><div id="ocupSum"></div><a class="btn" href="#dimensionamento" style="margin-top:12px">Abrir dimensionamento</a>';
 }
 document.getElementById("projForm").addEventListener("input",e=>{const k=e.target.dataset.p;if(!k)return;S.proj[k]=e.target.value;save();renderBrand()});
@@ -1202,7 +1203,7 @@ function memoRefs(){const used=new Set();calcMemo().forEach(g=>g.rows.forEach(c=
 function memoHTML(){
   const P=S.proj;
   let h='<h1>Memorial de cálculo dos reservatórios</h1><p style="margin:4px 0 0;color:var(--ink-soft)">Critérios, fórmulas e valores do dimensionamento, com as referências</p>'+
-   '<dl class="meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Responsável técnico</dt><dd>'+esc(P.resp)+'</dd></dl>';
+   '<dl class="meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Responsável técnico</dt><dd class="g-blank"></dd></dl>';
   calcMemo().forEach(g=>{h+='<h3>'+esc(g.g)+'</h3><div class="tbl-wrap"><table><thead><tr><th>Grandeza</th><th>Critério</th><th>Valor no projeto</th><th>Referência</th></tr></thead><tbody>'+
    g.rows.map(c=>'<tr><td><b>'+esc(c[0])+'</b></td><td>'+esc(c[1])+'</td><td>'+esc(c[2])+'</td><td>'+esc(cites(c[3]))+'</td></tr>').join("")+'</tbody></table></div>'});
   h+='<h2>Referências</h2><div class="refs">'+memoRefs().map(x=>'<p>'+esc(x)+'</p>').join("")+'</div>';
@@ -1257,7 +1258,7 @@ function dimReportHTML(){
   let h='<header class="g-top"><p class="g-kicker">ROTIRP · NBR 5626:2020</p><h1>Relatório de dimensionamento dos reservatórios</h1>'+
    '<p class="g-sub">Volumes, compartimentos, alimentador, conjunto motobomba e diâmetros das tubulações</p></header>'+
    '<dl class="g-meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Endereço da obra</dt><dd>'+esc(P.endereco)+'</dd><dt>Cliente</dt><dd>'+esc(P.cliente)+'</dd>'+
-   '<dt>Responsável técnico</dt><dd>'+esc(P.resp)+(P.registro?", CREA ou CAU "+esc(P.registro):"")+'</dd><dt>Data</dt><dd>'+dt+'</dd></dl>'+
+   '<dt>Responsável técnico</dt><dd class="g-blank"></dd><dt>Data</dt><dd>'+dt+'</dd></dl>'+
    '<div class="g-nums"><div><b>'+fmt(R.cd)+'</b><span>L/dia de consumo</span></div><div><b>'+fmt(R.vSup)+'</b><span>L no superior</span></div>'+
    '<div><b>'+fmt(R.vInf)+'</b><span>L no inferior</span></div><div><b>'+fmt(R.qefh,2)+'</b><span>m³/h na saída do recalque</span></div></div>';
   h+=sec(1,"Edificação")+rowsT(DR.geral);
@@ -1285,7 +1286,7 @@ function dimReportPDF(){
   const sec=(n,t)=>{if(doc.__y>262){doc.addPage();doc.__y=18}doc.__y+=2;doc.setFillColor(64,64,64);doc.rect(15,doc.__y-4.6,8,6.6,"F");
     doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(255);doc.text(String(n),19,doc.__y,{align:"center"});
     doc.setTextColor(25);doc.setFontSize(12);doc.text(pdfTxt(t),26,doc.__y);doc.setDrawColor(150);doc.setLineWidth(.3);doc.line(15,doc.__y+2.6,195,doc.__y+2.6);doc.__y+=7};
-  kv([["Projeto",P.nome],["Endereço da obra",P.endereco],["Cliente",P.cliente],["Responsável técnico",P.resp+(P.registro?", CREA ou CAU "+P.registro:"")],["Data",dt]]);
+  kv([["Projeto",P.nome],["Endereço da obra",P.endereco],["Cliente",P.cliente],["Responsável técnico",""],["Data",dt]]);
   /* faixa de números-chave em tons de cinza */
   const nums=[[fmt(R.cd),"L/dia de consumo"],[fmt(R.vSup),"L no superior"],[fmt(R.vInf),"L no inferior"],[fmt(R.qefh,2),"m³/h na saída do recalque"]];
   nums.forEach((n,i)=>{const x=15+i*45.5;doc.setFillColor(i%2?236:226);doc.rect(x,doc.__y,43.5,16,"F");doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(25);doc.text(pdfTxt(n[0]),x+3,doc.__y+7.5);
@@ -1334,7 +1335,7 @@ function reportHTML(){
   const dt=P.data?new Date(P.data+"T12:00:00").toLocaleDateString("pt-BR"):"";
   let h='<header class="g-top"><p class="g-kicker">ROTIRP · NBR 5626:2020</p><h1>Relatório de conformidade dos reservatórios de água fria</h1>'+
    '<p class="g-sub">Verificação dos itens 6.5.1 a 6.5.10 da ABNT NBR 5626:2020 nos reservatórios superior e inferior</p></header>'+
-   '<dl class="g-meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Endereço da obra</dt><dd>'+esc(P.endereco)+'</dd><dt>Cliente</dt><dd>'+esc(P.cliente)+'</dd><dt>Responsável técnico</dt><dd>'+esc(P.resp)+(P.registro?", CREA ou CAU "+esc(P.registro):"")+'</dd>'+
+   '<dl class="g-meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Endereço da obra</dt><dd>'+esc(P.endereco)+'</dd><dt>Cliente</dt><dd>'+esc(P.cliente)+'</dd><dt>Responsável técnico</dt><dd class="g-blank"></dd>'+
    '<dt>Data de conclusão da obra</dt><dd>'+(P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):"")+'</dd><dt>Encarregado</dt><dd>'+esc(P.encarregado||"")+'</dd><dt>Data da inspeção</dt><dd>'+dt+'</dd></dl>'+
    '<div class="g-nums"><div><b>'+okCount("sup")+' de '+nBal("sup")+'</b><span>pontos conformes no superior</span></div><div><b>'+okCount("inf")+' de '+nBal("inf")+'</b><span>pontos conformes no inferior</span></div>'+
    '<div><b>'+N.nc+'</b><span>respostas não conformes</span></div><div><b>'+N.pend+'</b><span>perguntas sem resposta</span></div></div>';
@@ -1370,7 +1371,7 @@ function reportPDF(){
   const sec=(n,t)=>{if(doc.__y>262){doc.addPage();doc.__y=18}doc.__y+=2;doc.setFillColor(64,64,64);doc.rect(15,doc.__y-4.6,8,6.6,"F");
     doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(255);doc.text(String(n),19,doc.__y,{align:"center"});
     doc.setTextColor(25);doc.setFontSize(12);doc.text(pdfTxt(t),26,doc.__y);doc.setDrawColor(150);doc.setLineWidth(.3);doc.line(15,doc.__y+2.6,195,doc.__y+2.6);doc.__y+=7};
-  tbl(null,[["Projeto",P.nome],["Endereço da obra",P.endereco],["Cliente",P.cliente],["Responsável técnico",P.resp+(P.registro?", CREA ou CAU "+P.registro:"")],["Data de conclusão da obra",P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):""],["Encarregado",P.encarregado||""],["Data da inspeção",dt]],
+  tbl(null,[["Projeto",P.nome],["Endereço da obra",P.endereco],["Cliente",P.cliente],["Responsável técnico",""],["Data de conclusão da obra",P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):""],["Encarregado",P.encarregado||""],["Data da inspeção",dt]],
     {columnStyles:{0:{cellWidth:50,fontStyle:"bold",fillColor:[232,232,232]}},alternateRowStyles:{}});
   const nums=[[okCount("sup")+" de "+nBal("sup"),"pontos conformes no superior"],[okCount("inf")+" de "+nBal("inf"),"pontos conformes no inferior"],[String(N.nc),"respostas não conformes"],[String(N.pend),"perguntas sem resposta"]];
   nums.forEach((n,i)=>{const x=15+i*45.5;doc.setFillColor(i%2?236:226);doc.rect(x,doc.__y,43.5,16,"F");doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(25);doc.text(pdfTxt(n[0]),x+3,doc.__y+7.5);

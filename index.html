@@ -940,8 +940,7 @@ function buildDim(){
    '<div class="card"><p class="sub" style="margin-top:0">Cada diâmetro vem preenchido com o valor calculado. Para adotar outro, escolha na lista. A velocidade é sempre calculada. O app avisa quando algo não atende ao critério.</p><div id="tubAlert"></div><div id="tubos"></div></div>'+
   '<p class="foot-ref">Os diâmetros estão em DN (diâmetro nominal) de tubo de PVC soldável. As fórmulas e as referências de cada cálculo estão na aba Memorial. São diâmetros de pré-dimensionamento; o projeto executivo exige verificação completa de pressões e perdas de carga.</p>';
 }
-const camT=g=>{const am=g.amin;return '<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Compartimento</th><th class="n">C × L (m)</th><th class="n">Área (m²)</th><th class="n">Altura útil (m)</th><th class="n">Volume (L)</th></tr></thead><tbody>'+
-  g.list.map(c=>'<tr><td>'+(c.nc>1?c.r+"."+c.k:"Reserv. "+c.r)+(g.n>1&&c.a===am?' <small style="color:var(--ink-soft)">(menor)</small>':'')+'</td><td class="n">'+fmt(c.c,2)+" × "+fmt(c.l,2)+'</td><td class="n">'+fmt(c.a,2)+'</td><td class="n">'+fmt(g.h,2)+'</td><td class="n">'+fmt(c.v)+'</td></tr>').join("")+'</tbody></table></div>'};
+const camT=g=>g.list.map(c=>Rr((c.nc>1?"Comp. "+c.r+"."+c.k:"Reserv. "+c.r)+(g.n>1&&c.a===g.amin&&g.list.some(x=>x.a>g.amin)?" (menor)":""),fmt(c.c,2)+" × "+fmt(c.l,2)+" m · "+fmt(c.v)+" L")).join("");
 const sub3=t=>'<h3 style="margin:18px 0 4px;font-size:17px">'+t+'</h3>';
 const pillRow=(k,t)=>'<div style="margin:8px 0">'+pill(k,t)+'</div>';
 const selMan=x=>'<select data-man="'+x.k+'" aria-label="Diâmetro de '+x.n+', '+(x.r==="sup"?"superior":"inferior")+'"><option value="">'+dn(x.calc)+' (calculado)</option>'+PVC.map(p=>'<option value="'+p.dn+'"'+(x.man&&x.de===p.dn?" selected":"")+'>DN '+p.nom+'</option>').join("")+'</select>';
@@ -964,7 +963,7 @@ function renderDimResults(){
    sub3("Volume")+Rr("Consumo ("+fmt(I.pctSup,0)+"% da reserva de consumo)",fmt(R.cSupPct),"L")+(R.supAum?Rr("Consumo ajustado para a manutenção (6.5.6.5)",fmt(R.cSup),"L"):"")+Rr("Reserva de incêndio",fmt(R.rInc),"L")+
    Rr("Volume do superior",fmt(R.vSup),"L")+
    (R.supAum?pillRow("warn","A parcela do superior foi aumentada para que o menor compartimento atenda ao consumo no horário de pico durante a manutenção. O inferior foi reduzido na mesma medida"):"")+
-   sub3("Compartimentos e dimensões")+camT(R.gS)+Rr("Altura útil (calculada)",fmt(R.gS.h,2),"m")+Rr("Altura total (com folga)",fmt(R.htS,2),"m")+Rr("Volume do menor compartimento",fmt(R.vminS),"L")+pillRow(R.camChk[0],R.camChk[1])+
+   sub3("Compartimentos (C × L · volume)")+camT(R.gS)+Rr("Altura útil (calculada) / total",fmt(R.gS.h,2)+" / "+fmt(R.htS,2),"m")+pillRow(R.camChk[0],R.camChk[1])+
    sub3("Entrada pelo recalque")+Rr("Vazão efetiva ao final do recalque",fmt(R.qef,2)+" L/s ("+fmt(R.qefh,2)+" m³/h)")+Rr("Velocidade na saída",fmt(R.vef,2),"m/s")+Rr("Diâmetro do recalque",dn(R.drec))+
    Rr("Tempo para repor o consumo diário",isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—","h")+
    (R.qn<=0?pillRow("bad","Informe a vazão nominal da bomba no reservatório inferior"):pillRow(R.recOk?"ok":"bad",R.recOk?"A vazão efetiva repõe o consumo diário em até 6 h (item 6.7.2)":"A vazão efetiva não repõe o consumo diário em 6 h (item 6.7.2). Seriam precisos "+fmt(R.qreqh,2)+" m³/h"));
@@ -974,7 +973,7 @@ function renderDimResults(){
    '<p class="foot-ref">A saída de cada compartimento do superior é dimensionada para a vazão total, porque durante a manutenção um compartimento abastece sozinho o edifício.</p>';
   document.getElementById("resInf").innerHTML='<h3>Resultados do inferior</h3>'+
    sub3("Volume")+Rr("Consumo restante da reserva",fmt(R.cInf),"L")+Rr("Volume do inferior",fmt(R.vInf),"L")+
-   sub3("Compartimentos e dimensões")+camT(R.gI)+Rr("Altura útil (calculada)",fmt(R.gI.h,2),"m")+Rr("Altura total (com folga)",fmt(R.htI,2),"m")+pillRow(R.camChkI[0],R.camChkI[1])+
+   sub3("Compartimentos (C × L · volume)")+camT(R.gI)+Rr("Altura útil (calculada) / total",fmt(R.gI.h,2)+" / "+fmt(R.htI,2),"m")+pillRow(R.camChkI[0],R.camChkI[1])+
    sub3("Bomba de recalque")+Rr("Vazão nominal da bomba (entrada do recalque)",fmt(R.qn,2)+" L/s ("+fmt(R.qnh,2)+" m³/h)")+Rr("Altura manométrica nominal",fmt(R.hn,1),"mca")+
    Rr("Altura com vazão zero"+(R.h0Est?" (estimada: 1,2 × nominal)":""),fmt(R.h0,1),"mca")+Rr("Altura exigida pelo sistema na vazão nominal",fmt(R.hsNom,2),"mca")+
    Rr("Ponto de operação",fmt(R.qefh,2)+" m³/h a "+fmt(R.hop,2)+" mca")+Rr("Vazão mínima para repor em 6 h",fmt(R.qreqh,2),"m³/h")+

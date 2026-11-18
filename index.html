@@ -276,7 +276,7 @@ td input[type=number]{width:74px;padding:5px 8px}
 .helpbox p{margin:0 0 6px}.helpbox p:last-child{margin:0}.helpbox .dim{border-left:3px solid var(--brass);padding-left:8px}
 select[data-man]{min-width:175px}
 .geo{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px}.geo .f{margin-bottom:6px}
-.geo-t{width:100%;border-collapse:collapse}.geo-t th{font-size:12.5px;text-align:left;color:var(--ink-soft);font-weight:600;padding:4px}.geo-t td{padding:4px}.geo-t input{width:100%;max-width:120px}#dimBody .grid2{grid-template-columns:1fr}@media (max-width:560px){.geo-t{table-layout:fixed}.geo-t th:first-child,.geo-t td:first-child{width:16%}.geo-t th,.geo-t td{padding:3px 2px}.geo-t th{font-size:11.5px}.geo-t input[type=number]{width:100%;padding:5px 4px;min-width:0;box-sizing:border-box}}
+.geo-t{width:100%;border-collapse:collapse}.geo-t th{font-size:12.5px;text-align:left;color:var(--ink-soft);font-weight:600;padding:4px}.geo-t td{padding:4px}.geo-t input{width:100%;max-width:120px}#dimBody .grid2{grid-template-columns:1fr}.geo-c{margin:8px 0 4px;padding:6px 10px;border-left:3px solid var(--brass);background:var(--bg);border-radius:6px}.geo-h{font-weight:700;font-size:14.5px;margin:2px 0 4px}.geo-h small{font-weight:500;color:var(--ink-soft)}.geo-c .f{margin-bottom:2px}@media (max-width:560px){.geo-t{table-layout:fixed}.geo-t th:first-child,.geo-t td:first-child{width:16%}.geo-t th,.geo-t td{padding:3px 2px}.geo-t th{font-size:11.5px}.geo-t input[type=number]{width:100%;padding:5px 4px;min-width:0;box-sizing:border-box}}
 input.vel{width:78px;text-align:right}
 .helpbox .tccp{color:var(--water)}.helpbox .ref{font-size:12.5px;color:var(--ink-soft)}
 </style>
@@ -908,12 +908,11 @@ function geoIn(k){
   const G=S.inp[k];let h='<div class="f"><label for="n_'+k+'">Número de reservatórios</label><input type="number" id="n_'+k+'" data-geo="'+k+'" data-gn="res" min="1" max="6" step="1" value="'+G.length+'"><span class="u">reserv.</span></div>';
   G.forEach((r,ri)=>{
     h+='<div class="geo"><div class="f"><label for="nc_'+k+ri+'"><b>Reservatório '+(ri+1)+'</b>: compartimentos</label><input type="number" id="nc_'+k+ri+'" data-geo="'+k+'" data-gn="comp" data-r="'+ri+'" min="'+(k==="geoSup"&&G.length===1?2:1)+'" max="6" step="1" value="'+r.comp.length+'"><span class="u">'+(r.comp.length>1?"compart.":"sem divisão")+'</span></div>'+
-     '<div class="tbl-wrap"><table class="geo-t"><thead><tr><th>'+(r.comp.length>1?"Compart.":"Reserv.")+'</th><th>Compr. (m)</th><th>Largura (m)</th><th>Altura útil (m)</th><th>Altura total (m)</th></tr></thead><tbody>'+
-     r.comp.map((c,ci)=>{const nm=r.comp.length>1?"compartimento "+(ri+1)+"."+(ci+1):"reservatório "+(ri+1),
-       inp=(gn,v,lb)=>'<td><input type="number" step="0.05" min="0" data-geo="'+k+'" data-gn="'+gn+'" data-r="'+ri+'" data-c="'+ci+'" value="'+v+'" aria-label="'+lb+' do '+nm+'"></td>';
-       return '<tr><td>'+(r.comp.length>1?(ri+1)+"."+(ci+1):(ri+1))+(ri===0&&ci===0&&G.reduce((a,x)=>a+x.comp.length,0)>1?' <small style="color:var(--ink-soft)">menor</small>':'')+'</td>'+
-        inp("c",c.c,"Comprimento")+inp("l",c.l,"Largura")+inp("hu",c.hu,"Altura útil")+inp("ht",c.ht,"Altura total")+'</tr>'}).join("")+
-     '</tbody></table></div></div>'});
+     r.comp.map((c,ci)=>{const nm=r.comp.length>1?"Compartimento "+(ri+1)+"."+(ci+1):"Reservatório "+(ri+1),
+       fi=(gn,v,lb)=>{const id="g_"+k+ri+"_"+ci+"_"+gn;return '<div class="f"><label for="'+id+'">'+lb+'</label><input type="number" id="'+id+'" step="0.05" min="0" data-geo="'+k+'" data-gn="'+gn+'" data-r="'+ri+'" data-c="'+ci+'" value="'+v+'"><span class="u">m</span></div>'};
+       return '<div class="geo-c"><div class="geo-h">'+nm+(ri===0&&ci===0&&G.reduce((a,x)=>a+x.comp.length,0)>1?' <small>(menor)</small>':'')+'</div>'+
+        fi("c",c.c,"Comprimento")+fi("l",c.l,"Largura")+fi("hu",c.hu,"Altura útil (do fundo à lâmina d'água)")+fi("ht",c.ht,"Altura total (do fundo à base da tampa)")+'</div>'}).join("")+
+     '</div>'});
   return h;
 }
 const fitIn=(k,keys,de)=>'<div class="tbl-wrap"><table class="geo-t"><thead><tr><th>Conexão ou peça</th><th class="n">Le (m) no '+dn(de)+'</th><th>Quantidade</th></tr></thead><tbody>'+

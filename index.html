@@ -561,7 +561,7 @@ function calc(){
   R.drt=1.3*Math.sqrt(R.qn/1000)*Math.pow(R.hRec/24,.25)*1000;R.drecCalc=com(R.drt);R.drec=pick("rec",R.drecCalc);R.vrec=R.qn/1000/areaOf(R.drec);
   /* Saída do recalque: vazão efetiva no ponto de operação, cruzando a curva da bomba com a curva do sistema.
      Sistema: Hs(Q) = Hg + J(Q)·(L + Leq). Bomba: H(Q) = H0 − a·Q², passando pelo ponto (Q, H) da bomba (Qn, Hn);
-     H0 = altura com vazão zero (shutoff) do catálogo ou, se não informada, estimada em 1,2 × Hn */
+     H0 = altura máxima (shut-off) do catálogo ou, se não informada, estimada em 1,2 × Hn */
   {const d=pvcByDn(R.drec).di/1000;R.leqRec=leqOf(R.drec,I.fRec,FIT_REC);R.lRec=Math.max(+I.lRec||0,0);R.hg=+I.hgRec||0;
    const Hs=q=>R.hg+jFWH(q/1000,d)*(R.lRec+R.leqRec);R.h0Est=!(+I.h0Bomba>R.hn);R.h0=R.h0Est?1.2*R.hn:+I.h0Bomba;
    const a=R.qn>0?(R.h0-R.hn)/(R.qn*R.qn):0,Hp=q=>R.h0-a*q*q;
@@ -928,8 +928,8 @@ function buildDim(){
   '<div class="sec-title"><span class="tag">C</span><h2>Reservatório inferior</h2></div><div class="grid2">'+
    '<div class="card"><h3>Dados do inferior</h3>'+note("O volume é calculado automaticamente. Informe o número de reservatórios, o número de compartimentos de cada um e o comprimento e a largura de cada compartimento. A altura útil é calculada.")+
     geoIn("geoInf")+F("fInf","Folga até a tampa","m","0.05")+
-    h3("Bomba de recalque")+note("Dados da placa ou do catálogo da bomba. A altura com vazão zero é opcional; com 0, o app estima 1,2 × a altura manométrica.")+
-    F("qBomba","Vazão da bomba","m³/h","0.5")+F("hBomba","Altura manométrica","mca","0.5")+F("h0Bomba","Altura com vazão zero (shutoff)","mca","0.5")+
+    h3("Bomba de recalque")+note("Dados da placa ou do catálogo da bomba. A altura máxima (shut-off) é opcional; com 0, o app estima 1,2 × a altura manométrica.")+
+    F("qBomba","Vazão da bomba","m³/h","0.5")+F("hBomba","Altura manométrica","mca","0.5")+F("h0Bomba","Altura máxima (shut-off)","mca","0.5")+
     h3("Entrada pelo alimentador predial")+note("A vazão é calculada pela pressão de trabalho mínima, pelo diâmetro e pela perda de carga até a entrada do reservatório. A pressão máxima verifica a pressão estática na torneira de boia.")+
     '<div class="f"><label for="selAl">Diâmetro do alimentador</label><select id="selAl" data-man="al"></select><span class="u"></span></div>'+
     F("pMin","Pressão de trabalho mínima (na entrada do reservatório)","mca","0.5")+F("pMax","Pressão de trabalho máxima (na entrada do reservatório)","mca","0.5")+
@@ -976,7 +976,7 @@ function renderDimResults(){
    sub3("Volume")+Rr("Consumo restante da reserva",fmt(R.cInf),"L")+Rr("Volume do inferior",fmt(R.vInf),"L")+
    sub3("Compartimentos e dimensões")+camT(R.gI)+Rr("Altura útil (calculada)",fmt(R.gI.h,2),"m")+Rr("Altura total (com folga)",fmt(R.htI,2),"m")+pillRow(R.camChkI[0],R.camChkI[1])+
    sub3("Bomba de recalque")+Rr("Vazão da bomba (entrada do recalque)",fmt(R.qn,2)+" L/s ("+fmt(R.qnh,2)+" m³/h)")+Rr("Altura manométrica",fmt(R.hn,1),"mca")+
-   Rr("Altura com vazão zero"+(R.h0Est?" (estimada: 1,2 × altura manométrica)":""),fmt(R.h0,1),"mca")+Rr("Altura exigida pelo sistema na vazão da bomba",fmt(R.hsNom,2),"mca")+
+   Rr("Altura máxima (shut-off)"+(R.h0Est?" (estimada: 1,2 × altura manométrica)":""),fmt(R.h0,1),"mca")+Rr("Altura exigida pelo sistema na vazão da bomba",fmt(R.hsNom,2),"mca")+
    Rr("Ponto de operação",fmt(R.qefh,2)+" m³/h a "+fmt(R.hop,2)+" mca")+Rr("Vazão mínima para repor em 6 h",fmt(R.qreqh,2),"m³/h")+
    (R.hsNom>R.hn+0.01?pillRow("warn","O sistema exige mais que a altura manométrica: a vazão efetiva fica abaixo da vazão da bomba"):pillRow("ok","A bomba vence o sistema na vazão da bomba"))+
    sub3("Entrada pelo alimentador predial")+Rr("Carga disponível (pressão mínima)",fmt(R.al.Hb,2),"mca")+Rr("Vazão do alimentador "+dn(R.dal),fmt(R.qal,2),"L/s")+
@@ -1103,7 +1103,7 @@ function calcMemo(){
    ["Menor compartimento (6.5.6.5)","O menor compartimento deve atender ao consumo no horário de pico durante a manutenção. Com a mesma lâmina em todos: Cs × (Amín ÷ Atotal) ≥ Rm","Cmín = "+fmt(R.cSup)+" × "+fmt(R.gS.amin,2)+" ÷ "+fmt(R.gS.A,2)+" = "+fmt(R.cmin)+" L "+(R.cmin+0.5>=R.rManut?"≥":"<")+" "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5"]],
    ["Volume do superior","Vs = Cs + RTI, calculado automaticamente","Vs = "+fmt(R.cSup)+" + "+fmt(R.rInc)+" ≈ "+fmt(R.vSup)+" L",["nbr2020|item 6.5.6.2"]],
    ["Altura útil","Área de cada compartimento = comprimento × largura; altura útil h = Vs ÷ soma das áreas; volume de cada compartimento = área × h","h = "+fmt(R.vSup/1000,2)+" m³ ÷ "+fmt(R.gS.A,2)+" m² = "+fmt(R.gS.h,2)+" m (altura total com folga: "+fmt(R.htS,2)+" m)",[]],
-   ["Vazão efetiva ao final do recalque","Ponto de operação: interseção da curva da bomba, H = H0 − a·Q² (passando por Qn e Hn), com a curva do sistema, Hs = Hg + J·(L + Leq)","Qef = "+fmt(R.qefh,2)+" m³/h a "+fmt(R.hop,2)+" mca (Hg = "+fmt(R.hg,1)+" m; L + Leq = "+fmt(R.lRec,0)+" + "+fmt(R.leqRec,1)+" m; H0 = "+fmt(R.h0,1)+" mca"+(R.h0Est?", estimada em 1,2 × Hn":"")+")",["tigre|p. 35 e 36"]],
+   ["Vazão efetiva ao final do recalque","Ponto de operação: interseção da curva da bomba, H = H0 − a·Q² (passando por Qn e Hn), com a curva do sistema, Hs = Hg + J·(L + Leq)","Qef = "+fmt(R.qefh,2)+" m³/h a "+fmt(R.hop,2)+" mca (Hg = "+fmt(R.hg,1)+" m; L + Leq = "+fmt(R.lRec,0)+" + "+fmt(R.leqRec,1)+" m; H0 (altura máxima, shut-off) = "+fmt(R.h0,1)+" mca"+(R.h0Est?", estimada em 1,2 × Hn":"")+")",["tigre|p. 35 e 36"]],
    ["Reposição pelo recalque (6.7.2)","t = CD ÷ (Qef × 3600) ≤ 6 h","t = "+fmt(R.cd)+" ÷ ("+fmt(R.qef,2)+" × 3600) = "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h",["nbr2020|item 6.7.2"]],
    ["Diâmetro do recalque","Diâmetro econômico (Forchheimer): D = 1,3 · √Q · X^0,25, com Q = vazão da bomba (m³/s) e X = horas de funcionamento por dia (CD ÷ Q) ÷ 24","Com a vazão da bomba: D = 1,3 × √"+fmt(R.qrec/1000,5)+" × ("+fmt(R.hRec,1)+"/24)^0,25 = "+fmt(R.drt,1)+" mm, "+dn(R.drecCalc)+man("rec",R.drec)+" (v = "+fmt(R.vrec,2)+" m/s)",["tigre|p. 63"]],
    ["Extravasor","Bitola comercial imediatamente superior à da entrada de água",dn(R.dexsCalc)+", uma acima do recalque "+dn(R.drec)+man("exs",R.dexs),["cj2023|p. 41"]],

@@ -460,6 +460,7 @@ const D=JSON.parse(JSON.stringify(DEFAULTS));
 S.proj=Object.assign({},D.proj,S.proj||{});S.inp=Object.assign({},D.inp,S.inp||{});
 const geoOk=g=>Array.isArray(g)&&g.length>0&&g.every(r=>r&&Array.isArray(r.comp)&&r.comp.length>0);
 ["geoSup","geoInf"].forEach(k=>{if(!geoOk(S.inp[k]))S.inp[k]=JSON.parse(JSON.stringify(D.inp[k]))});
+{const G=S.inp.geoSup;if(G.reduce((a,r)=>a+r.comp.length,0)<2)G[0].comp.push(Object.assign({},G[0].comp[0]))}
 if(typeof S.inp.vMan!=="object"||!S.inp.vMan)S.inp.vMan={};if(typeof S.inp.dMan!=="object"||!S.inp.dMan)S.inp.dMan={};
 ["ans","done","inter","obs","banner"].forEach(k=>{S[k]=Object.assign({},D[k],S[k]||{})});
 if(!RES[S.res])S.res="sup";
@@ -855,7 +856,7 @@ const num=(v,d=2)=>(+v||0).toFixed(d);
 function geoIn(k){
   const G=S.inp[k];let h='<div class="f"><label for="n_'+k+'">Número de reservatórios</label><input type="number" id="n_'+k+'" data-geo="'+k+'" data-gn="res" min="1" max="6" step="1" value="'+G.length+'"><span class="u">reserv.</span></div>';
   G.forEach((r,ri)=>{
-    h+='<div class="geo"><div class="f"><label for="nc_'+k+ri+'"><b>Reservatório '+(ri+1)+'</b>: compartimentos</label><input type="number" id="nc_'+k+ri+'" data-geo="'+k+'" data-gn="comp" data-r="'+ri+'" min="1" max="6" step="1" value="'+r.comp.length+'"><span class="u">'+(r.comp.length>1?"compart.":"sem divisão")+'</span></div>'+
+    h+='<div class="geo"><div class="f"><label for="nc_'+k+ri+'"><b>Reservatório '+(ri+1)+'</b>: compartimentos</label><input type="number" id="nc_'+k+ri+'" data-geo="'+k+'" data-gn="comp" data-r="'+ri+'" min="'+(k==="geoSup"&&G.length===1?2:1)+'" max="6" step="1" value="'+r.comp.length+'"><span class="u">'+(r.comp.length>1?"compart.":"sem divisão")+'</span></div>'+
      '<table class="geo-t"><thead><tr><th>'+(r.comp.length>1?"Compartimento":"Reservatório")+'</th><th>Comprimento (m)</th><th>Largura (m)</th></tr></thead><tbody>'+
      r.comp.map((c,ci)=>'<tr><td>'+(r.comp.length>1?(ri+1)+"."+(ci+1):(ri+1))+'</td><td><input type="number" step="0.05" min="0" data-geo="'+k+'" data-gn="c" data-r="'+ri+'" data-c="'+ci+'" value="'+c.c+'" aria-label="Comprimento do '+(r.comp.length>1?"compartimento "+(ri+1)+"."+(ci+1):"reservatório "+(ri+1))+'"></td><td><input type="number" step="0.05" min="0" data-geo="'+k+'" data-gn="l" data-r="'+ri+'" data-c="'+ci+'" value="'+c.l+'" aria-label="Largura do '+(r.comp.length>1?"compartimento "+(ri+1)+"."+(ci+1):"reservatório "+(ri+1))+'"></td></tr>').join("")+
      '</tbody></table></div>'});
@@ -873,7 +874,7 @@ function buildDim(){
    '</div><div class="card" id="resA"></div></div>'+
 
   '<div class="sec-title"><span class="tag">B</span><h2>Reservatório superior</h2></div><div class="grid2">'+
-   '<div class="card"><h3>Dados do superior</h3>'+note("O volume é calculado automaticamente. Informe o número de reservatórios, o número de compartimentos de cada um e o comprimento e a largura de cada compartimento. A altura útil é calculada.")+
+   '<div class="card"><h3>Dados do superior</h3>'+note("O volume é calculado automaticamente. Informe o número de reservatórios, o número de compartimentos de cada um e o comprimento e a largura de cada compartimento. A altura útil é calculada. O superior deve ter no mínimo 2 compartimentos (6.5.6.5).")+
     geoIn("geoSup")+F("fSup","Folga até a tampa","m","0.05")+
    '</div><div class="card" id="resSup"></div></div>'+
    '<div class="grid2" style="margin-top:20px">'+
@@ -925,6 +926,7 @@ function renderDimResults(){
   document.getElementById("resInf").innerHTML='<h3>Resultados do inferior</h3>'+
    sub3("Volume")+Rr("Consumo restante da reserva",fmt(R.cInf),"L")+Rr("Volume do inferior",fmt(R.vInf),"L")+
    sub3("Compartimentos e dimensões")+camT(R.gI)+Rr("Altura útil (calculada)",fmt(R.gI.h,2),"m")+Rr("Altura total (com folga)",fmt(R.htI,2),"m")+pillRow(R.camChkI[0],R.camChkI[1])+
+   sub3("Bomba de recalque")+Rr("Vazão nominal da bomba",fmt(R.qrec,2)+" L/s ("+fmt(R.qrech,2)+" m³/h)")+
    sub3("Entrada pelo alimentador predial")+Rr("Carga disponível (pressão mínima − desnível)",fmt(R.al.Hb,2),"mca")+Rr("Vazão do alimentador "+dn(R.dal),fmt(R.qal,2),"L/s")+
    Rr("Velocidade",fmt(R.valim,2),"m/s")+Rr("Perda de carga no alimentador",fmt(R.al.hf,2),"mca")+Rr("Pressão disponível na saída do alimentador",fmt(R.al.pRes,2),"mca")+
    Rr("Pressão estática máxima na saída (máxima − desnível)",fmt(R.pEstMax,2),"mca")+(R.pEstMax>40?pillRow("bad","Acima de 40 mca: prever válvula redutora de pressão"):"")+
@@ -944,7 +946,10 @@ dimEl.addEventListener("change",e=>{
   if(t.dataset.geo&&(t.dataset.gn==="res"||t.dataset.gn==="comp")){
     const G=S.inp[t.dataset.geo],n=Math.max(1,Math.min(6,Math.round(+t.value||1)));
     if(t.dataset.gn==="res"){while(G.length<n)G.push(JSON.parse(JSON.stringify(G[G.length-1])));G.length=n}
-    else{const r=G[+t.dataset.r];while(r.comp.length<n)r.comp.push(Object.assign({},r.comp[r.comp.length-1]));r.comp.length=n}
+    if(t.dataset.geo==="geoSup"){const tot=G.reduce((a,r)=>a+r.comp.length,0)-(t.dataset.gn==="comp"?G[+t.dataset.r].comp.length:0);
+      if(t.dataset.gn==="comp"&&tot+n<2){toast("O reservatório superior deve ter no mínimo 2 compartimentos");}
+      if(t.dataset.gn==="res"&&n===1&&G[0].comp.length<2){G[0].comp.push(Object.assign({},G[0].comp[0]));toast("Com um só reservatório, o superior deve ter no mínimo 2 compartimentos")}}
+    if(t.dataset.gn==="comp"){const r=G[+t.dataset.r],nn=t.dataset.geo==="geoSup"?Math.max(n,2-(G.reduce((a,x)=>a+x.comp.length,0)-r.comp.length)):n;while(r.comp.length<nn)r.comp.push(Object.assign({},r.comp[r.comp.length-1]));r.comp.length=nn}
     save();buildDim();renderDimResults();return}
 });
 dimEl.addEventListener("input",e=>{
@@ -1050,6 +1055,7 @@ function calcMemo(){
    ["Saída e barrilete","Método dos pesos: Q = 0,3 · √ΣP; menor DN com v ≤ 3 m/s","ΣP = "+fmt(R.pt,1)+", Q = "+fmt(R.qs,2)+" L/s, "+dn(R.dsaiCalc)+man("sai",R.dsai)+" (v = "+fmt(R.vsai,2)+" m/s)",["nbr1998|Anexo A","tigre|p. 64 e 68"]]]},
   {g:"Reservatório inferior",rows:[
    ["Volume do inferior","Vi = Rc − Cs, calculado automaticamente","Vi = "+fmt(R.rCons)+" − "+fmt(R.cSup)+" ≈ "+fmt(R.vInf)+" L",["nbr2020|item 6.5.6.2"]],
+   ["Vazão nominal da bomba","Bomba instalada junto ao inferior, com vazão para repor o consumo diário em até 6 h: Q = CD ÷ (6 × 3600)","Q = "+fmt(R.cd)+" ÷ 21.600 = "+fmt(R.qrec,2)+" L/s ("+fmt(R.qrech,2)+" m³/h)",["nbr2020|item 6.7.2"]],
    ["Altura útil","h = Vi ÷ soma das áreas dos compartimentos","h = "+fmt(R.vInf/1000,2)+" m³ ÷ "+fmt(R.gI.A,2)+" m² = "+fmt(R.gI.h,2)+" m (altura total com folga: "+fmt(R.htI,2)+" m)",[]],
    ["Compartimento único (6.5.6.7)","Permitido só se Rm < Cs (consumo durante a manutenção menor que o consumo guardado no superior)",fmt(R.rManut)+" L "+(R.infUnicoOk?"<":"≥")+" "+fmt(R.cSup)+" L: "+(R.infUnicoOk?"permitido":"não permitido"),["nbr2020|item 6.5.6.7"]],
    ["Carga disponível no alimentador","Hd = pressão de trabalho mínima − desnível. A vazão é a que deixa 1 mca de pressão na saída: H = Hd − 1","Hd = "+fmt(I.pMin,1)+" − "+fmt(I.dzAlim,1)+" = "+fmt(R.al.Hb,2)+" mca; perda de carga "+fmt(R.al.hf,2)+" mca; pressão na saída "+fmt(R.al.pRes,2)+" mca",["tigre|p. 39"]],

@@ -279,6 +279,32 @@ select[data-man]{min-width:175px}
 .geo-t{width:100%;border-collapse:collapse}.geo-t th{font-size:12.5px;text-align:left;color:var(--ink-soft);font-weight:600;padding:4px}.geo-t td{padding:4px}.geo-t input{width:100%;max-width:120px}#dimBody .grid2{grid-template-columns:1fr}.geo-c{margin:8px 0 4px;padding:6px 10px;border-left:3px solid var(--brass);background:var(--bg);border-radius:6px}.geo-h{font-weight:700;font-size:14.5px;margin:2px 0 4px}.geo-h small{font-weight:500;color:var(--ink-soft)}.geo-c .f{margin-bottom:2px}@media (max-width:560px){.geo-t{table-layout:fixed}.geo-t th:first-child,.geo-t td:first-child{width:16%}.geo-t th,.geo-t td{padding:3px 2px}.geo-t th{font-size:11.5px}.geo-t input[type=number]{width:100%;padding:5px 4px;min-width:0;box-sizing:border-box}}
 input.vel{width:78px;text-align:right}
 .helpbox .tccp{color:var(--water)}.helpbox .ref{font-size:12.5px;color:var(--ink-soft)}
+.rep-switch{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:3px;margin:14px 0 4px;background:var(--panel)}
+.rep-switch .seg{border:0;background:transparent;color:var(--ink);font:600 14.5px var(--f-body);padding:7px 16px;border-radius:999px;cursor:pointer}
+.rep-switch .seg.on{background:#333;color:#fff}
+.paper.gray{background:#fff;color:#1a1a1a;--ink:#1a1a1a;--ink-soft:#5a5a5a;--line:#c8c8c8}
+.paper.gray .g-top{background:#222;color:#fff;margin:-44px -52px 22px;padding:26px 52px 22px;border-radius:6px 6px 0 0}
+.paper.gray .g-top h1{color:#fff;font-size:28px;margin:4px 0}
+.paper.gray .g-kicker{margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#bdbdbd}
+.paper.gray .g-sub{margin:0;color:#cfcfcf;font-size:14.5px}
+.paper.gray .g-meta{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:14px;margin:0 0 18px}
+.paper.gray .g-meta dt{color:#5a5a5a}.paper.gray .g-meta dd{margin:0;font-weight:600}
+.paper.gray .g-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:8px 0 6px}
+.paper.gray .g-nums div{padding:12px 14px;background:#e2e2e2}.paper.gray .g-nums div:nth-child(even){background:#ececec}
+.paper.gray .g-nums b{display:block;font-size:21px;color:#111}.paper.gray .g-nums span{font-size:12.5px;color:#555}
+.paper.gray .g-h2{display:flex;align-items:center;gap:10px;font-size:19px;margin:28px 0 8px;padding-bottom:6px;border-bottom:1.5px solid #8a8a8a;color:#111}
+.paper.gray .g-h2 span{display:inline-grid;place-items:center;width:28px;height:28px;background:#404040;color:#fff;border-radius:4px;font-size:15px}
+.paper.gray .g-kv{width:100%;border-collapse:collapse}.paper.gray .g-kv th{width:38%;text-align:left;font-weight:600;background:#ececec;color:#333;padding:7px 10px;border:1px solid #d0d0d0;vertical-align:top}
+.paper.gray .g-kv td{padding:7px 10px;border:1px solid #d0d0d0;color:#111}
+.paper.gray .g-t{width:100%;border-collapse:collapse}.paper.gray .g-t th{background:#404040;color:#fff;text-align:left;padding:7px 8px;font-size:12.5px}
+.paper.gray .g-t td{padding:7px 8px;border-bottom:1px solid #d0d0d0;vertical-align:top}.paper.gray .g-t tbody tr:nth-child(even){background:#f4f4f4}
+.paper.gray .g-t .n{white-space:nowrap}
+.paper.gray .g-st{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:3px;margin-right:4px}
+.paper.gray .g-ok{background:#e0e0e0;color:#222}.paper.gray .g-warn{background:#9a9a9a;color:#fff}.paper.gray .g-bad{background:#1a1a1a;color:#fff}
+.paper.gray .g-foot{font-size:12.5px;color:#5a5a5a;margin-top:14px}
+.paper.gray .sign div{border-top-color:#1a1a1a}
+@media (max-width:700px){.paper.gray .g-top{margin:-26px -20px 18px;padding:20px}.paper.gray .g-nums{grid-template-columns:1fr 1fr}.paper.gray .g-meta{grid-template-columns:1fr}.paper.gray .g-kv th{width:45%}}
+@media print{.paper.gray .g-top{margin:0 0 18px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.paper.gray *{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 
 <header class="top">
@@ -386,12 +412,22 @@ input.vel{width:78px;text-align:right}
     <h1 id="h-rep">Relatório</h1>
     <p class="lede">O relatório pode ser salvo em PDF a qualquer momento. Se a inspeção não estiver concluída, ele sai marcado como incompleto, com a lista do que falta.</p>
   </div>
+  <div class="rep-switch no-print" role="group" aria-label="Escolha o relatório"><button class="seg on" data-rep="conf" aria-pressed="true">Conformidade</button><button class="seg" data-rep="dim" aria-pressed="false">Dimensionamento</button></div>
+  <div id="repConf">
   <div class="rep-actions">
     <button class="btn primary" id="repPdf">Salvar relatório em PDF</button>
     <button class="btn" id="repPrint" hidden>Imprimir</button>
     <span class="note" id="repNote"></span>
   </div>
   <article class="paper" id="report"></article>
+  </div>
+  <div id="repDim" hidden>
+  <div class="rep-actions">
+    <button class="btn primary" id="dimPdf">Salvar relatório de dimensionamento em PDF</button>
+    <button class="btn" id="dimPrint" hidden>Imprimir</button>
+  </div>
+  <article class="paper gray" id="reportDim"></article>
+  </div>
 </section>
 
 </div>
@@ -944,7 +980,7 @@ function buildDim(){
     geoIn("geoInf")+
     h3("Entrada pelo alimentador predial")+note("A vazão é calculada pela pressão média de trabalho, pelo diâmetro e pelas perdas de carga do tubo, das conexões e da torneira de boia. O diâmetro calculado é o menor que repõe o consumo diário em 6 h com velocidade até 3 m/s.")+
     '<div class="f"><label for="selAl">Diâmetro do alimentador</label><select id="selAl" data-man="al"></select><span class="u"></span></div>'+
-    F("pMed","Pressão média de trabalho (no início do alimentador)","mca","0.5")+
+    F("pMed","Pressão média de trabalho (a jusante)","mca","0.5")+
     h3("Perdas de carga")+F("lAlim","Comprimento do tubo do alimentador","m","1","1")+note("Conexões do alimentador, incluindo a entrada de borda. A torneira de boia de alta vazão (uma por compartimento) entra automaticamente.")+'<div id="fitAl"></div>'+
    '</div><div class="card" id="resInf"></div></div>'+
 
@@ -1147,7 +1183,7 @@ function calcMemo(){
    ["Volume do inferior","Vi = Rc − Cs, calculado automaticamente","Vi = "+fmt(R.rCons)+" − "+fmt(R.cSup)+" ≈ "+fmt(R.vInf)+" L",["nbr2020|item 6.5.6.2"]],
    ["Altura útil","h = Vi ÷ soma das áreas dos compartimentos; altura total informada ≥ h","h = "+fmt(R.vInf/1000,2)+" m³ ÷ "+fmt(R.gI.A,2)+" m² = "+fmt(R.gI.h,2)+" m",[]],
    ["Compartimento único (6.5.6.7)","Permitido só se Rm < Cs (consumo durante a manutenção menor que o consumo guardado no superior)",fmt(R.rManut)+" L "+(R.infUnicoOk?"<":"≥")+" "+fmt(R.cSup)+" L: "+(R.infUnicoOk?"permitido":"não permitido"),["nbr2020|item 6.5.6.7"]],
-   ["Carga disponível no alimentador","Hd = pressão média de trabalho no início do alimentador","Hd = "+fmt(R.al.Hb,2)+" mca",[]],
+   ["Carga disponível no alimentador","Hd = pressão média de trabalho a jusante","Hd = "+fmt(R.al.Hb,2)+" mca",[]],
    ["Perda localizada no alimentador","Comprimento equivalente Leq = Σ (quantidade × Le) das conexões, inclusive a entrada de borda","Leq = "+fmt(R.al.Leq,1)+" m; perda localizada = J × Leq = "+fmt(R.al.hfL,2)+" mca",["tigre|p. 36"]],
    ["Torneira de boia de alta vazão","Perda na boia pela curva pressão × vazão do fabricante: 66 L/min a 5 mca, 83 L/min a 10 mca, 220 L/min a 50 mca e 253 L/min a 75 mca, interpolada; uma boia por compartimento",R.al.nB+" boia(s) com "+fmt(R.al.q*60/R.al.nB,0)+" L/min cada: "+fmt(R.al.pBoia,2)+" mca",["wavin|p. 3"]],
    ["Vazão do alimentador","Fair-Whipple-Hsiao para PVC até 100 mm: J = 0,0008695 · Q^1,75 · D^−4,75 (SI). Q é a vazão que satisfaz Hd = J·(L + Leq) + pBoia","J = "+fmt(R.al.J,4)+" m/m, perda distribuída "+fmt(R.al.hfD,2)+" mca, "+dn(R.dal)+" (Di = "+fmt(pvcByDn(R.dal).di,1)+" mm): Q = "+fmt(R.qal,2)+" L/s, v = "+fmt(R.valim,2)+" m/s ("+(R.valim<=VMAX+1e-9?"≤":">")+" 3 m/s)"+(R.dalMin?". Menor DN que repõe em 6 h com v ≤ 3 m/s: "+dn(R.dalMin):"")+(+R.dMan.al?" (adotado manualmente)":""),["tigre|p. 33 e 35","nbr5648"]],
@@ -1191,9 +1227,8 @@ function reportHTML(){
    :'<div class="verdict warn">Relatório incompleto. A inspeção ainda não foi concluída. Superior com '+okCount("sup")+' de '+nBal("sup")+' pontos e inferior com '+okCount("inf")+' de '+nBal("inf")+' pontos em conformidade. Falta concluir<ul>'+miss.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul></div>';
   const DR=dimRows(R),rowsT=a=>'<table><tbody>'+a.map(r=>'<tr><td style="width:42%;color:var(--ink-soft)">'+r[0]+'</td><td><b>'+r[1]+'</b></td></tr>').join("")+'</tbody></table>';
   const tubR=a=>'<div class="tbl-wrap"><table><thead><tr><th>Tubulação</th><th>Diâmetro</th><th>Vazão</th><th>Velocidade</th><th>Registro ou válvula</th><th>Situação</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+x.n+'</td><td style="white-space:nowrap">'+dn(x.de)+'</td><td style="white-space:nowrap">'+(x.q!=null?fmt(x.q,2)+' L/s':'—')+'</td><td style="white-space:nowrap">'+(x.v!=null?fmt(x.v,2)+' m/s':'—')+'</td><td>'+x.reg+'</td><td>'+esc(x.chk[1])+'</td></tr>').join("")+'</tbody></table></div>';
-  h+='<h2>1. Edificação</h2>'+rowsT(DR.geral);
   ["sup","inf"].forEach((r,k)=>{
-    h+='<h2>'+(2+k)+'. '+RESC[r]+'</h2><h3>Dimensionamento</h3>'+rowsT(DR[r])+'<h3>Tubulações, diâmetros e registros</h3>'+tubR(R.tubos.filter(x=>x.r===r))+(r==="inf"?'<h3>Conjunto motobomba</h3>'+rowsT(DR.mb):'');
+    h+='<h2>'+(1+k)+'. '+RESC[r]+'</h2>';
     h+='<h3>Checklist</h3><div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Verificação</th><th>Resposta</th><th>Situação</th></tr></thead><tbody>';
     balList(r).forEach(B=>{
       h+='<tr><td colspan="4" style="background:var(--panel-2);font-weight:700">Balão '+B.n+', '+esc(bNome(B,r))+(vis(B.n,r)==="ok"?' <span class="c">(concluído)</span>':'')+'</td></tr>';
@@ -1235,11 +1270,66 @@ function dimRows(R){const I=S.inp,ok=b=>b?"atende":"não atende",
   ["Potência hidráulica",fmt(R.phid,0)+" W"+(R.eta!=null?"; rendimento resultante "+fmt(R.eta*100,0)+"%":"")],
   ["Reposição pelo recalque (6.7.2)",(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h, mínimo de "+fmt(R.qreqh,2)+" m³/h: "+ok(R.recOk)]]
 }}
-function renderReport(){document.getElementById("report").innerHTML=reportHTML();const n=missing().length;
+/* ============ RELATÓRIO DE DIMENSIONAMENTO (escala de cinza) ============ */
+const stG={ok:"Atende",warn:"Atenção",bad:"Não atende"};
+function dimReportHTML(){
+  const R=calc(),P=S.proj,DR=dimRows(R),dt=P.data?new Date(P.data+"T12:00:00").toLocaleDateString("pt-BR"):"";
+  const rowsT=a=>'<table class="g-kv"><tbody>'+a.map(r=>'<tr><th>'+r[0]+'</th><td>'+r[1]+'</td></tr>').join("")+'</tbody></table>';
+  const sec=(n,t)=>'<h2 class="g-h2"><span>'+n+'</span>'+t+'</h2>';
+  let h='<header class="g-top"><p class="g-kicker">ROTIRP · NBR 5626:2020</p><h1>Relatório de dimensionamento dos reservatórios</h1>'+
+   '<p class="g-sub">Volumes, compartimentos, alimentador, conjunto motobomba e diâmetros das tubulações</p></header>'+
+   '<dl class="g-meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Endereço da obra</dt><dd>'+esc(P.endereco)+'</dd><dt>Cliente</dt><dd>'+esc(P.cliente)+'</dd>'+
+   '<dt>Responsável técnico</dt><dd>'+esc(P.resp)+(P.registro?", CREA ou CAU "+esc(P.registro):"")+'</dd><dt>Data</dt><dd>'+dt+'</dd></dl>'+
+   '<div class="g-nums"><div><b>'+fmt(R.cd)+'</b><span>L/dia de consumo</span></div><div><b>'+fmt(R.vSup)+'</b><span>L no superior</span></div>'+
+   '<div><b>'+fmt(R.vInf)+'</b><span>L no inferior</span></div><div><b>'+fmt(R.qefh,2)+'</b><span>m³/h na saída do recalque</span></div></div>';
+  h+=sec(1,"Edificação")+rowsT(DR.geral);
+  h+=sec(2,"Reservatório superior")+rowsT(DR.sup.filter(r=>r[0]!=="Entrada pelo recalque"));
+  h+=sec(3,"Reservatório inferior")+rowsT(DR.inf);
+  h+=sec(4,"Conjunto motobomba")+rowsT(DR.mb);
+  h+=sec(5,"Tubulações e diâmetros")+'<div class="tbl-wrap"><table class="g-t"><thead><tr><th>Tubulação</th><th>Reserv.</th><th>Diâmetro</th><th>Vazão</th><th>Velocidade</th><th>Registro ou válvula</th><th>Situação</th></tr></thead><tbody>'+
+   R.tubos.map(x=>'<tr><td><b>'+x.n+'</b></td><td>'+(x.r==="sup"?"Superior":"Inferior")+'</td><td class="n">'+dn(x.de)+'</td><td class="n">'+(x.q!=null?fmt(x.q,2)+" L/s":"—")+'</td><td class="n">'+(x.v!=null?fmt(x.v,2)+" m/s":"—")+'</td><td>'+x.reg+'</td><td><span class="g-st g-'+x.chk[0]+'">'+stG[x.chk[0]]+'</span> '+esc(x.chk[1])+'</td></tr>').join("")+'</tbody></table></div>';
+  h+='<p class="g-foot">Os diâmetros estão em DN de tubo de PVC soldável. As fórmulas e as referências de cada cálculo estão no memorial de cálculo. São valores de pré-dimensionamento; o projeto executivo exige verificação completa de pressões e perdas de carga.</p>'+
+   '<div class="sign"><div>Jean de Queiroz Macedo<br>Aluno IFCE - mat. 20232015050122</div><div>Técnico Responsável</div></div>';
+  return h;
+}
+function dimReportPDF(){
+  const J=window.jspdf&&window.jspdf.jsPDF;if(!J)return null;
+  const R=calc(),P=S.proj,DR=dimRows(R),dt=P.data?new Date(P.data+"T12:00:00").toLocaleDateString("pt-BR"):"";
+  const doc=new J({unit:"mm",format:"a4"});
+  doc.setFillColor(34,34,34);doc.rect(0,0,210,30,"F");
+  doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(190);doc.text("ROTIRP - NBR 5626:2020",15,10);
+  doc.setFont("helvetica","bold");doc.setFontSize(15);doc.setTextColor(255);doc.text(pdfTxt("Relatório de dimensionamento dos reservatórios"),15,19);
+  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(200);doc.text(pdfTxt("Volumes, compartimentos, alimentador, conjunto motobomba e diâmetros das tubulações"),15,25.5);
+  doc.__y=38;
+  const G={styles:{font:"helvetica",fontSize:8.5,cellPadding:1.8,textColor:[25,25,25],lineColor:[190,190,190],lineWidth:.1},headStyles:{fillColor:[64,64,64],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[244,244,244]},theme:"grid"};
+  const tbl=(head,body,extra={})=>{table(doc,head,body,Object.assign({},G,extra))};
+  const kv=a=>tbl(null,a.map(r=>[strip(r[0]),strip(r[1])]),{columnStyles:{0:{cellWidth:62,fontStyle:"bold",fillColor:[232,232,232]}},alternateRowStyles:{}});
+  const sec=(n,t)=>{if(doc.__y>262){doc.addPage();doc.__y=18}doc.__y+=2;doc.setFillColor(64,64,64);doc.rect(15,doc.__y-4.6,8,6.6,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(255);doc.text(String(n),19,doc.__y,{align:"center"});
+    doc.setTextColor(25);doc.setFontSize(12);doc.text(pdfTxt(t),26,doc.__y);doc.setDrawColor(150);doc.setLineWidth(.3);doc.line(15,doc.__y+2.6,195,doc.__y+2.6);doc.__y+=7};
+  kv([["Projeto",P.nome],["Endereço da obra",P.endereco],["Cliente",P.cliente],["Responsável técnico",P.resp+(P.registro?", CREA ou CAU "+P.registro:"")],["Data",dt]]);
+  /* faixa de números-chave em tons de cinza */
+  const nums=[[fmt(R.cd),"L/dia de consumo"],[fmt(R.vSup),"L no superior"],[fmt(R.vInf),"L no inferior"],[fmt(R.qefh,2),"m³/h na saída do recalque"]];
+  nums.forEach((n,i)=>{const x=15+i*45.5;doc.setFillColor(i%2?236:226);doc.rect(x,doc.__y,43.5,16,"F");doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(25);doc.text(pdfTxt(n[0]),x+3,doc.__y+7.5);
+    doc.setFont("helvetica","normal");doc.setFontSize(7.8);doc.setTextColor(85);doc.text(pdfTxt(n[1]),x+3,doc.__y+12.8)});doc.__y+=22;
+  sec(1,"Edificação");kv(DR.geral);
+  sec(2,"Reservatório superior");kv(DR.sup.filter(r=>r[0]!=="Entrada pelo recalque"));
+  sec(3,"Reservatório inferior");kv(DR.inf);
+  sec(4,"Conjunto motobomba");kv(DR.mb);
+  sec(5,"Tubulações e diâmetros");
+  tbl(["Tubulação","Reserv.","Diâmetro","Vazão","Velocidade","Registro ou válvula","Situação"],R.tubos.map(x=>[x.n,x.r==="sup"?"Superior":"Inferior",dn(x.de),x.q!=null?fmt(x.q,2)+" L/s":"—",x.v!=null?fmt(x.v,2)+" m/s":"—",x.reg,stG[x.chk[0]]+". "+x.chk[1]]),
+   {columnStyles:{0:{cellWidth:27,fontStyle:"bold"},1:{cellWidth:17},2:{cellWidth:19},3:{cellWidth:18},4:{cellWidth:21}}});
+  para(doc,"Os diâmetros estão em DN de tubo de PVC soldável. As fórmulas e as referências de cada cálculo estão no memorial de cálculo. São valores de pré-dimensionamento; o projeto executivo exige verificação completa de pressões e perdas de carga.",{size:8.5,color:[90,90,90]});
+  if(doc.__y>255){doc.addPage();doc.__y=30}doc.__y+=18;doc.setDrawColor(40);doc.setLineWidth(.2);doc.line(20,doc.__y,95,doc.__y);doc.line(115,doc.__y,190,doc.__y);
+  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(25);doc.text(pdfTxt("Jean de Queiroz Macedo"),57.5,doc.__y+5,{align:"center"});doc.text(pdfTxt("Aluno IFCE - mat. 20232015050122"),57.5,doc.__y+9.5,{align:"center"});doc.text(pdfTxt("Técnico Responsável"),152.5,doc.__y+5,{align:"center"});
+  footer(doc);return {doc,name:"dimensionamento-"+slug(P.nome)+".pdf"};
+}
+
+function renderReport(){document.getElementById("report").innerHTML=reportHTML();document.getElementById("reportDim").innerHTML=dimReportHTML();const n=missing().length;
   document.getElementById("repNote").textContent=n?"A inspeção tem "+n+" ponto(s) pendente(s). O PDF sairá marcado como incompleto.":"Inspeção completa nos dois reservatórios."}
 
 /* ============ PDF ============ */
-const pdfTxt=s=>String(s).replace(/−/g,"-").replace(/≈/g,"~").replace(/≥/g,">=").replace(/≤/g,"<=").replace(/√/g,"raiz ").replace(/Σ/g,"S").replace(/″/g,"\"").replace(/·/g,"x").replace(/π/g,"pi").replace(/[^\x00-\xFF—–•]/g,"");
+const pdfTxt=s=>String(s).replace(/³/g,"3").replace(/²/g,"2").replace(/−/g,"-").replace(/≈/g,"~").replace(/≥/g,">=").replace(/≤/g,"<=").replace(/√/g,"raiz ").replace(/Σ/g,"S").replace(/″/g,"\"").replace(/·/g,"x").replace(/π/g,"pi").replace(/[^\x00-\xFF—–•]/g,"");
 const strip=s=>pdfTxt(String(s).replace(/<[^>]+>/g,"").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"'));
 function newDoc(title,sub){
   const J=window.jspdf&&window.jspdf.jsPDF;if(!J)return null;
@@ -1269,12 +1359,8 @@ function reportPDF(){
     para(doc,"A inspeção ainda não foi concluída. Superior com "+okCount("sup")+" de "+nBal("sup")+" pontos e inferior com "+okCount("inf")+" de "+nBal("inf")+" pontos em conformidade. Falta concluir os pontos abaixo.",{after:1});
     miss.forEach(m=>para(doc,"• "+m.txt,{size:9.5,x:18,w:176,after:.5}));doc.__y+=3;
   }else para(doc,"Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens 6.5.1 a 6.5.10.",{bold:true,color:[43,138,87]});
-  const DR=dimRows(R);
-  head2(doc,"1. Edificação");table(doc,null,DR.geral.map(r=>[strip(r[0]),strip(r[1])]),{columnStyles:{0:{cellWidth:60,fontStyle:"bold"}}});
   ["sup","inf"].forEach((r,k)=>{
-    head2(doc,(2+k)+". "+RESC[r]);
-    para(doc,"Dimensionamento",{bold:true,size:10.5,color:[29,63,79],after:1});table(doc,null,DR[r].map(x=>[strip(x[0]),strip(x[1])]),{columnStyles:{0:{cellWidth:60,fontStyle:"bold"}}});
-    para(doc,"Tubulações, diâmetros e registros",{bold:true,size:10.5,color:[29,63,79],after:1});table(doc,["Tubulação","Diâmetro","Vazão","Velocidade","Registro ou válvula","Situação"],R.tubos.filter(x=>x.r===r).map(x=>[x.n,dn(x.de),x.q!=null?fmt(x.q,2)+" L/s":"—",x.v!=null?fmt(x.v,2)+" m/s":"—",x.reg,x.chk[1]]),{columnStyles:{0:{cellWidth:28},1:{cellWidth:18},2:{cellWidth:18},3:{cellWidth:20}}});if(r==="inf"){para(doc,"Conjunto motobomba",{bold:true,size:10.5,color:[29,63,79],after:1});table(doc,null,DR.mb.map(x=>[strip(x[0]),strip(x[1])]),{columnStyles:{0:{cellWidth:60,fontStyle:"bold"}}})}
+    head2(doc,(1+k)+". "+RESC[r]);
     para(doc,"Checklist",{bold:true,size:10.5,color:[29,63,79],after:1});
     const body=[];
     balList(r).forEach(B=>{body.push([{content:"Balão "+B.n+", "+bNome(B,r)+(vis(B.n,r)==="ok"?" (concluído)":""),colSpan:4,styles:{fillColor:[241,245,246],fontStyle:"bold"}}]);
@@ -1307,6 +1393,12 @@ async function deliver(make,noteId){
   }else{try{out.doc.save(out.name);toast("PDF salvo")}catch(e){toast("Não foi possível salvar o PDF aqui")}}
 }
 document.getElementById("repPdf").onclick=()=>deliver(reportPDF,"repNote");
+document.getElementById("dimPdf").onclick=()=>deliver(dimReportPDF,"repNote");
+document.getElementById("dimPrint").onclick=()=>window.print();
+if(!inClaude)document.getElementById("dimPrint").hidden=false;
+document.querySelectorAll(".rep-switch .seg").forEach(b=>b.onclick=()=>{const d=b.dataset.rep==="dim";
+  document.querySelectorAll(".rep-switch .seg").forEach(x=>{const on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-pressed",on)});
+  document.getElementById("repConf").hidden=d;document.getElementById("repDim").hidden=!d});
 document.getElementById("memoPdf").onclick=()=>deliver(memoPDF,"memoNote");
 document.getElementById("repPrint").onclick=()=>window.print();
 document.getElementById("memoPrint").onclick=()=>window.print();

@@ -481,7 +481,7 @@ const DEFAULTS={
   proj:{nome:"Edifício A",endereco:"Rua dos estudantes s/n",cliente:"IFCE",resp:"Jean Queiroz",registro:"65823214",data:"2026-09-30",conclusao:"",encarregado:""},
   inp:{tipo:"Apartamento",qAndar:32,andares:10,dias:2,pctSup:40,tManut:12,pctInc:20,
     geoSup:[{comp:[{c:4,l:5,hu:2,ht:2.6},{c:4,l:5,hu:2,ht:2.6}]}],geoInf:[{comp:[{c:4,l:4,hu:3,ht:3.5},{c:4,l:4,hu:3,ht:3.5}]}],
-    dMan:{},vMan:{},pMed:25,lAlim:30,dzAlim:1,nBoia:0,fAl:{j90:4,rg:2,eb:1},lRec:45,hgRec:35,assoc:"unica",nBombas:2,potW:2200,qBomba:12,hBomba:40,h0Bomba:0,fRec:{vpc:1,vrp:1,rg:2,j90:6,tsl:1},unid:4,
+    dMan:{},vMan:{},pMed:25,lAlim:30,dzAlim:1,nBoia:0,fAl:{j90:4,rg:2,eb:1},lRec:45,hgRec:35,nfBomba:6,assoc:"unica",nBombas:2,potW:2200,qBomba:12,hBomba:40,h0Bomba:0,fRec:{vpc:1,vrp:1,rg:2,j90:6,tsl:1},unid:4,
     qtd:[2,0,0,0,0,2,0,1,2,1,0,1,0]},
   ans:{sup:{},inf:{}}, done:{sup:{},inf:{}}, inter:{sup:{},inf:{}}, obs:{sup:{},inf:{}}, banner:{sup:false,inf:false}, res:"sup"
 };
@@ -602,6 +602,8 @@ function calc(){
   /* Recalque: repõe o consumo diário em 6 h (6.7.2); diâmetro econômico por Forchheimer com X = 6/24 */
   /* Vazão mínima para repor o consumo diário em 6 h (6.7.2) */
   R.qreq=R.cd/(T_REP*3600);R.qreqh=R.qreq*3.6;R.qmed=R.cd/86400;
+  /* Vazão de recalque (livros): Qr = CD ÷ (NF × 3600), NF = horas de funcionamento da bomba por dia */
+  R.nf=Math.min(Math.max(+I.nfBomba||6,1),24);R.qr=R.cd/(R.nf*3600);R.qrh=R.qr*3.6;
   /* Conjunto motobomba: dados de cada bomba (placa ou catálogo) e tipo de ligação.
      Única: H(Q) = H0 − a·Q². Paralelo (n bombas iguais): H(Q) = H0 − a·(Q/n)². Série: H(Q) = n·(H0 − a·Q²).
      a passa pelo ponto (Qn, Hn) de cada bomba; H0 = altura máxima (shut-off) ou, se não informada, 1,2 × Hn */
@@ -609,8 +611,9 @@ function calc(){
   R.qn=Math.max(+I.qBomba||0,0)/3.6;R.qnh=R.qn*3.6;R.hn=Math.max(+I.hBomba||0,0);R.pot=Math.max(+I.potW||0,0);R.potTot=R.pot*R.nb;
   R.qc=R.assoc==="paralelo"?R.nb*R.qn:R.qn;R.qch=R.qc*3.6;R.hc=R.assoc==="serie"?R.nb*R.hn:R.hn;
   /* Entrada do recalque: vazão do conjunto; diâmetro por Forchheimer, X = horas de funcionamento por dia (CD ÷ Q) ÷ 24 */
-  R.hRec=R.qc>0?Math.min(R.cd/(R.qc*3600),24):24;R.qrec=R.qc;R.qrech=R.qch;
-  R.drt=1.3*Math.sqrt(R.qc/1000)*Math.pow(R.hRec/24,.25)*1000;R.drecCalc=com(R.drt);R.drec=pick("rec",R.drecCalc);R.vrec=R.qc/1000/areaOf(R.drec);
+  /* Diâmetro do recalque por Forchheimer com a vazão de recalque Qr e X = NF ÷ 24 */
+  R.hRec=R.nf;R.qrec=R.qr;R.qrech=R.qrh;
+  R.drt=1.3*Math.sqrt(R.qr/1000)*Math.pow(R.nf/24,.25)*1000;R.drecCalc=com(R.drt);R.drec=pick("rec",R.drecCalc);R.vrec=R.qr/1000/areaOf(R.drec);
   /* Saída do recalque: vazão efetiva no ponto de operação, cruzando a curva do conjunto com a curva do sistema,
      Hs(Q) = Hg + J(Q)·(L + Leq) */
   {const d=pvcByDn(R.drec).di/1000;R.leqRec=leqOf(R.drec,I.fRec,FIT_REC);R.lRec=Math.max(+I.lRec||0,0);R.hg=+I.hgRec||0;
@@ -623,7 +626,7 @@ function calc(){
    R.qPorB=R.assoc==="paralelo"?qe/n:qe;R.hPorB=R.assoc==="serie"?R.hop/n:R.hop;
    /* Potência hidráulica: P = γ·Q·H (W), com γ = 9810 N/m³, Q em m³/s e H em m */
    R.phid=9810*(qe/1000)*R.hop;R.eta=R.potTot>0?R.phid/R.potTot:null;
-   R.hsNom=Hs(R.qc);R.tRepRec=qe>0?R.cd/(qe*3600):Infinity;R.recOk=R.tRepRec<=T_REP}
+   R.hsNom=Hs(R.qc);R.tRepRec=qe>0?R.cd/(qe*3600):Infinity;R.recOk=qe>0&&qe+1e-9>=R.qr}
   /* Extravasor: bitola comercial imediatamente superior à da entrada de água adotada */
   R.dexsCalc=up(R.drec);R.dexs=pick("exs",R.dexsCalc);R.dexiCalc=up(R.dal);R.dexi=pick("exi",R.dexiCalc);
   /* Limpeza: igual ou maior que a entrada (Tigre, 2025, p. 74), nunca menor que 32 mm (Carvalho Júnior, 2023, p. 41) */
@@ -637,7 +640,7 @@ function calc(){
   const alChk=R.al.H<=0?["bad","Informe a pressão média de trabalho"]:R.al.v>VMAX+1e-9?["bad","Velocidade de "+fmt(R.al.v,2)+" m/s com a pressão média, acima de 3 m/s"+(R.dalMin?". Calculado: "+lbl(R.dalMin):"")]:!R.al.ok?["bad","Não repõe o consumo diário em 6 h (item 6.7.2)"+(R.dalMin?". Mínimo: "+lbl(R.dalMin):". Nenhum diâmetro resolve: a torneira de boia limita a vazão. Aumente a pressão ou o número de compartimentos do inferior (uma boia por compartimento)")]:R.dal>R.dalCalc?["ok","Acima do mínimo calculado ("+lbl(R.dalCalc)+")"]:["ok","Repõe o consumo diário em "+fmt(R.tRepReal,1)+" h"];
   R.tubos=[
    {k:"al",n:"Alimentador predial",r:"inf",q:R.qal,de:R.dal,calc:R.dalCalc,v:R.valim,chk:alChk,reg:"Registro de fechamento a montante e próximo do reservatório, e torneira de boia na entrada (6.5.8.1 e 6.5.8.2)",crit:"Menor DN que repõe o consumo diário em 6 h"},
-   {k:"rec",n:"Recalque (entrada do superior)",r:"sup",q:R.qrec,de:R.drec,calc:R.drecCalc,v:R.vrec,chk:R.qn<=0?["bad","Informe a vazão da bomba no conjunto motobomba"]:!R.recOk?["bad","A vazão efetiva ("+fmt(R.qefh,2)+" m³/h) não repõe o consumo diário em 6 h (item 6.7.2)"]:vChk(R.vrec,R.drec,R.drecCalc,"diâmetro econômico de Forchheimer"),reg:"Registro de fechamento próximo ao reservatório superior (6.5.8.2)",crit:"Vazão do conjunto motobomba; Forchheimer"},
+   {k:"rec",n:"Recalque (entrada do superior)",r:"sup",q:R.qrec,de:R.drec,calc:R.drecCalc,v:R.vrec,chk:R.qn<=0?["bad","Informe a vazão da bomba no conjunto motobomba"]:!R.recOk?["bad","A vazão efetiva ("+fmt(R.qefh,2)+" m³/h) é menor que a vazão de recalque ("+fmt(R.qrh,2)+" m³/h)"]:vChk(R.vrec,R.drec,R.drecCalc,"diâmetro econômico de Forchheimer"),reg:"Registro de fechamento próximo ao reservatório superior (6.5.8.2)",crit:"Vazão de recalque; Forchheimer"},
    {k:"sai",n:"Saída de cada reservatório e barrilete",r:"sup",q:R.qs,de:R.dsai,calc:R.dsaiCalc,v:R.vsai,chk:vChk(R.vsai,R.dsai,R.dsaiCalc,"método dos pesos"),reg:"Registro em cada saída de reservatório e em cada coluna",crit:"Método dos pesos, v ≤ "+fmt(R.vCapSai,2)+" m/s"},
    {k:"exs",n:"Extravasor",r:"sup",de:R.dexs,calc:R.dexsCalc,chk:minChk(R.dexs,R.dexsCalc,"deve ter uma bitola acima do recalque"),reg:"Sem registro, escoamento livre (6.5.9.4)",crit:"Uma bitola acima do recalque"},
    {k:"lims",n:"Limpeza",r:"sup",de:R.dls,calc:R.dlsCalc,chk:minChk(R.dls,R.dlsCalc,"deve ser igual ou maior que o recalque e ter no mínimo 32 mm"),reg:"Registro de fácil acesso, próximo à saída (6.5.9.1)",crit:"Igual à entrada (recalque), mínimo de 32 mm"},
@@ -774,7 +777,7 @@ const Q=[
  {id:"j3",it:"6.5.10.2",bs:8,bi:8,t:"O acesso para verificação e limpeza é garantido por meio de abertura com dimensão suficiente?",conf:yes},
  {id:"j4",it:"6.5.10.3",bs:3,bi:3,t:"O espaço em torno do reservatório é suficiente para permitir a realização das atividades de verificação e manutenção, garantindo a movimentação segura da pessoa encarregada de executá-las?",conf:yes},
  {id:"k1",it:"6.7.2",bs:5,bi:5,t:{inf:"A vazão considerada no abastecimento do reservatório é suficiente para a reposição total do volume destinado ao consumo diário em até 6 h?",sup:"A vazão de recalque é suficiente para a reposição total do volume destinado ao consumo diário em até 6 h?"},conf:yes,
-   help:R=>S.res==="inf"?"Pelo dimensionamento, o alimentador "+dn(R.dal)+" repõe o consumo diário em "+fmt(R.tRepReal,1)+" h.":"Pelo dimensionamento, a vazão efetiva ao final do recalque é de "+fmt(R.qefh,2)+" m³/h e repõe o consumo diário em "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h (mínimo de "+fmt(R.qreqh,2)+" m³/h)."}
+   help:R=>S.res==="inf"?"Pelo dimensionamento, o alimentador "+dn(R.dal)+" repõe o consumo diário em "+fmt(R.tRepReal,1)+" h.":"Pelo dimensionamento, a vazão efetiva ao final do recalque é de "+fmt(R.qefh,2)+" m³/h e repõe o consumo diário em "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h (vazão de recalque de "+fmt(R.qrh,2)+" m³/h)."}
 ];
 const tx=(q,r)=>typeof q.t==="string"?q.t:q.t[r];
 const balOf=(q,r)=>r==="sup"?q.bs:q.bi;
@@ -967,6 +970,7 @@ function buildDim(){
    '<div class="card"><h3>Consumo da edificação</h3>'+
     '<div class="f"><label for="i_tipo">Tipo de edificação</label><select id="i_tipo" data-k="tipo" style="grid-column:span 2">'+CONSUMO.map(c=>'<option'+(c[0]===I.tipo?" selected":"")+'>'+c[0]+'</option>').join("")+'</select></div>'+
     F("qAndar",'Quantidade por andar <span id="unitLbl"></span>',"por andar","1")+F("andares","Número de andares","andares","1")+
+    h3("Recalque")+note("A vazão de recalque é o consumo diário dividido pelas horas em que a bomba funciona por dia.")+F("nfBomba","Horas de funcionamento da bomba por dia","h","0.5","1","24")+
     h3("Peças de utilização")+note("Peças por apartamento típico, método dos pesos, NBR 5626:1998, Anexo A.")+F("unid","Apartamentos por andar","unid.","1")+
     '<div class="tbl-wrap"><table><thead><tr><th>Peça</th><th class="n">Peso</th><th class="n">Qtd.</th></tr></thead><tbody>'+
     PESOS.map((p,i)=>'<tr><td>'+p[0]+'<br><small style="color:var(--ink-soft)">'+p[1]+'</small></td><td class="n">'+fmt(p[3],1)+'</td><td class="n"><input type="number" min="0" step="1" id="qtd_'+i+'" data-qtd="'+i+'" value="'+(I.qtd[i]||0)+'" aria-label="Quantidade de '+p[0]+', '+p[1]+'"></td></tr>').join("")+
@@ -1026,8 +1030,7 @@ function renderDimResults(){
    '<div><b>'+fmt(R.vInf)+'</b><span>L no inferior ('+R.nI+' reserv.)</span></div><div><b>'+fmt(R.rInc)+'</b><span>L de reserva de incêndio</span></div>';
   document.getElementById("resQ").innerHTML='<h3>Vazões de projeto</h3>'+
    sub3("Consumo")+Rr("Consumo unitário",fmt(R.cu),"L/dia por "+R.unidade)+Rr("Quantidade total",fmt(R.qt),plural(R.unidade))+Rr("Consumo diário (CD)",fmt(R.cd),"L/dia")+
-   sub3("Abastecimento dos reservatórios")+Rr("Vazão média diária (CD ÷ 86.400 s)",fmt(R.qmed,2)+" L/s ("+fmt(R.qmed*3.6,2)+" m³/h)")+
-   Rr("Vazão de projeto do alimentador e do recalque (repor o CD em 6 h, item 6.7.2)",fmt(R.qreq,2)+" L/s ("+fmt(R.qreqh,2)+" m³/h)")+
+   sub3("Recalque")+Rr("Horas de funcionamento da bomba por dia (NF)",fmt(R.nf,1),"h")+Rr("Vazão de recalque (Qr = CD ÷ NF)",fmt(R.qr,2)+" L/s ("+fmt(R.qrh,2)+" m³/h)")+
    sub3("Distribuição: saída do superior e barrilete")+Rr("Soma dos pesos por apartamento",fmt(R.pu,1),"ΣP")+Rr("Apartamentos abastecidos",fmt(R.nun))+Rr("Soma dos pesos total",fmt(R.pt,1),"ΣP")+
    Rr("Vazão de projeto da distribuição (Q = 0,3·√ΣP)",fmt(R.qs,2),"L/s")+
    ((+I.qtd[1]||0)>0&&R.pu>0?pillRow("warn","A válvula de descarga tem peso 32 e responde por "+fmt((+I.qtd[1])*32/R.pu*100,0)+"% da soma dos pesos. Confirme se o prédio usa válvula"):"");
@@ -1053,7 +1056,7 @@ function renderDimResults(){
     pillRow(R.al.ok?"ok":"bad",R.al.ok?"O "+dn(R.dal)+" repõe o consumo diário em até 6 h (item 6.7.2)":"O "+dn(R.dal)+" não repõe o consumo diário em 6 h (item 6.7.2)"+(R.dalMin?". Seria preciso "+dn(R.dalMin):". Nenhum diâmetro resolve, porque a torneira de boia limita a vazão: aumente a pressão ou o número de compartimentos do inferior (uma boia por compartimento)")));
   const AS={unica:"Bomba única",paralelo:R.nb+" bombas em paralelo",serie:R.nb+" bombas em série"}[R.assoc];
   document.getElementById("resBomba").innerHTML='<h3>Resultados do conjunto</h3>'+
-   sub3("Conjunto")+Rr("Ligação",AS)+Rr("Vazão do conjunto (entrada do recalque)",fmt(R.qch,2),"m³/h")+Rr("Altura manométrica do conjunto",fmt(R.hc,1),"mca")+
+   sub3("Conjunto")+Rr("Ligação",AS)+Rr("Vazão de recalque de projeto (item A)",fmt(R.qrh,2),"m³/h")+Rr("Vazão do conjunto",fmt(R.qch,2),"m³/h")+Rr("Altura manométrica do conjunto",fmt(R.hc,1),"mca")+
    Rr("Altura máxima (shut-off) do conjunto"+(R.h0Est?" (estimada)":""),fmt(R.h0c,1),"mca")+Rr("Potência instalada",fmt(R.potTot,0),"W")+
    sub3("Sistema")+Rr("Diâmetro do recalque",dn(R.drec))+Rr("Comprimento do tubo + equivalente",fmt(R.lRec,0)+" + "+fmt(R.leqRec,1),"m")+Rr("Altura exigida pelo sistema na vazão do conjunto",fmt(R.hsNom,2),"mca")+
    sub3("Saída do recalque (bomba × sistema)")+Rr("Vazão efetiva",fmt(R.qef,2)+" L/s ("+fmt(R.qefh,2)+" m³/h)")+Rr("Pressão efetiva",fmt(R.hop,2)+" mca ("+fmt(R.hop*9.81,0)+" kPa)")+
@@ -1062,8 +1065,8 @@ function renderDimResults(){
    (R.qn<=0?"":R.hsNom>R.hc+0.01?pillRow("warn","O sistema exige mais que a altura manométrica do conjunto: a vazão efetiva fica abaixo da vazão do conjunto"):pillRow("ok","O conjunto vence o sistema na vazão informada"))+
    (R.eta!=null&&R.eta>1?pillRow("bad","A potência instalada é menor que a potência hidráulica no ponto de operação. Confira a potência e a curva da bomba"):"")+
    (R.vef>VMAX+1e-9?pillRow("bad","Velocidade na saída acima de 3 m/s"):"")+
-   Rr("Vazão mínima para repor em 6 h",fmt(R.qreqh,2),"m³/h")+Rr("Tempo para repor o consumo diário",isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—","h")+
-   (R.qn<=0?pillRow("bad","Informe a vazão da bomba"):pillRow(R.recOk?"ok":"bad",R.recOk?"A vazão efetiva repõe o consumo diário em até 6 h (item 6.7.2)":"A vazão efetiva não repõe o consumo diário em 6 h (item 6.7.2). Seriam precisos "+fmt(R.qreqh,2)+" m³/h"));
+   Rr("Tempo de funcionamento para recalcar o consumo diário",isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—","h")+
+   (R.qn<=0?pillRow("bad","Informe a vazão da bomba"):pillRow(R.recOk?"ok":"bad",R.recOk?"A vazão efetiva atende à vazão de recalque de "+fmt(R.qrh,2)+" m³/h (bomba funcionando até "+fmt(R.nf,1)+" h por dia)":"A vazão efetiva é menor que a vazão de recalque de "+fmt(R.qrh,2)+" m³/h: a bomba precisaria funcionar "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h por dia"));
   document.getElementById("fitAl").innerHTML=fitIn("fAl",FIT_AL,R.dal);document.getElementById("fitRec").innerHTML=fitIn("fRec",FIT_REC,R.drec);
   const sa=document.getElementById("selAl");sa.innerHTML='<option value="">'+dn(R.dalCalc)+' (calculado)</option>'+PVC.map(p=>'<option value="'+p.dn+'"'+(+I.dMan.al===p.dn?" selected":"")+'>DN '+p.nom+'</option>').join("");
   document.getElementById("tubAlert").innerHTML=R.tubAlerta.map(t=>pillRow(t.chk[0],t.n+" ("+(t.r==="sup"?"superior":"inferior")+"), "+dn(t.de)+": "+t.chk[1])).join("");
@@ -1174,8 +1177,7 @@ function calcMemo(){
   return [
   {g:"Vazão de projeto",rows:[
    ["Consumo diário","CD = consumo per capita × população","CD = "+fmt(R.cu)+" × "+fmt(R.qt)+" = "+fmt(R.cd)+" L/dia",["tigre|p. 58-59"]],
-   ["Vazão média diária","Qméd = CD ÷ 86.400 s","Qméd = "+fmt(R.cd)+" ÷ 86.400 = "+fmt(R.qmed,2)+" L/s",[]],
-   ["Vazão de projeto do abastecimento","Alimentador e recalque devem repor o consumo diário em até 6 h: Q = CD ÷ (6 × 3600)","Q = "+fmt(R.cd)+" ÷ 21.600 = "+fmt(R.qreq,2)+" L/s ("+fmt(R.qreqh,2)+" m³/h)",["nbr2020|item 6.7.2"]],
+   ["Vazão de recalque","Qr = CD ÷ (NF × 3600), com NF = horas de funcionamento da bomba por dia","Qr = "+fmt(R.cd)+" ÷ ("+fmt(R.nf,1)+" × 3600) = "+fmt(R.qr,2)+" L/s ("+fmt(R.qrh,2)+" m³/h)",[]],
    ["Vazão de projeto da distribuição","Método dos pesos: Q = 0,3 · √ΣP","ΣP = "+fmt(R.pt,1)+"; Q = 0,3 × √"+fmt(R.pt,1)+" = "+fmt(R.qs,2)+" L/s",["nbr1998|Anexo A","tigre|p. 64 e 68"]]]},
   {g:"Reservas da edificação",rows:[
    ["Reserva de consumo","Rc = CD × dias de reservação, entre 1 dia (item 6.5.6.2) e 3 dias (nota do item 6.5.6.3); usual de 2 dias","Rc = "+fmt(R.cd)+" × "+fmt(R.dias,1)+" = "+fmt(R.rCons)+" L",["nbr2020|itens 6.5.6.2 e 6.5.6.3","tigre|p. 60"]],
@@ -1187,15 +1189,15 @@ function calcMemo(){
    ["Menor compartimento (6.5.6.5)","O menor compartimento deve atender ao consumo no horário de pico durante a manutenção. Com a mesma lâmina em todos: Cs × (Amín ÷ Atotal) ≥ Rm","Cmín = "+fmt(R.cSup)+" × "+fmt(R.gS.amin,2)+" ÷ "+fmt(R.gS.A,2)+" = "+fmt(R.cmin)+" L "+(R.cmin+0.5>=R.rManut?"≥":"<")+" "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5"]],
    ["Volume do superior","Vs = Cs + RTI, calculado automaticamente","Vs = "+fmt(R.cSup)+" + "+fmt(R.rInc)+" ≈ "+fmt(R.vSup)+" L",["nbr2020|item 6.5.6.2"]],
    ["Altura útil","Área de cada compartimento = comprimento × largura; altura útil h = Vs ÷ soma das áreas (mesma lâmina em todos); volume de cada compartimento = área × h; altura total informada ≥ h","h = "+fmt(R.vSup/1000,2)+" m³ ÷ "+fmt(R.gS.A,2)+" m² = "+fmt(R.gS.h,2)+" m",[]],
-   ["Diâmetro do recalque","Diâmetro econômico (Forchheimer): D = 1,3 · √Q · X^0,25, com Q = vazão do conjunto motobomba (m³/s) e X = horas de funcionamento por dia (CD ÷ Q) ÷ 24","Com a vazão do conjunto: D = 1,3 × √"+fmt(R.qrec/1000,5)+" × ("+fmt(R.hRec,1)+"/24)^0,25 = "+fmt(R.drt,1)+" mm, "+dn(R.drecCalc)+man("rec",R.drec)+" (v = "+fmt(R.vrec,2)+" m/s)",["tigre|p. 63"]],
+   ["Diâmetro do recalque","Diâmetro econômico (Forchheimer): D = 1,3 · √Qr · X^0,25, com Qr = vazão de recalque (m³/s) e X = NF ÷ 24","D = 1,3 × √"+fmt(R.qr/1000,5)+" × ("+fmt(R.nf,1)+"/24)^0,25 = "+fmt(R.drt,1)+" mm, "+dn(R.drecCalc)+man("rec",R.drec)+" (v = "+fmt(R.vrec,2)+" m/s)",["tigre|p. 63"]],
    ["Extravasor","Bitola comercial imediatamente superior à da entrada de água",dn(R.dexsCalc)+", uma acima do recalque "+dn(R.drec)+man("exs",R.dexs),["cj2023|p. 41"]],
    ["Limpeza","Igual ou maior que a tubulação de entrada, e não menor que 32 mm, para o lodo do fundo não obstruir a tubulação",dn(R.dlsCalc)+man("lims",R.dls),["tigre|p. 74","cj2023|p. 41"]],
    ["Saída e barrilete","Método dos pesos: Q = 0,3 · √ΣP; menor DN com v ≤ 3 m/s","ΣP = "+fmt(R.pt,1)+", Q = "+fmt(R.qs,2)+" L/s, "+dn(R.dsaiCalc)+man("sai",R.dsai)+" (v = "+fmt(R.vsai,2)+" m/s)",["nbr1998|Anexo A","tigre|p. 64 e 68"]]]},
   {g:"Conjunto motobomba",rows:[
-   ["Vazão do conjunto","Dados de cada bomba (placa ou catálogo). Em paralelo, n bombas iguais somam as vazões na mesma altura; em série, somam as alturas na mesma vazão. A vazão mínima para repor o consumo diário em 6 h é CD ÷ (6 × 3600)",({unica:"Bomba única",paralelo:R.nb+" bombas em paralelo",serie:R.nb+" bombas em série"})[R.assoc]+": Qn = "+fmt(R.qnh,2)+" m³/h a "+fmt(R.hn,1)+" mca por bomba; conjunto "+fmt(R.qch,2)+" m³/h a "+fmt(R.hc,1)+" mca; mínimo de "+fmt(R.qreqh,2)+" m³/h",["nbr2020|item 6.7.2"]],
+   ["Vazão do conjunto","Dados de cada bomba (placa ou catálogo). Em paralelo, n bombas iguais somam as vazões na mesma altura; em série, somam as alturas na mesma vazão",({unica:"Bomba única",paralelo:R.nb+" bombas em paralelo",serie:R.nb+" bombas em série"})[R.assoc]+": Qn = "+fmt(R.qnh,2)+" m³/h a "+fmt(R.hn,1)+" mca por bomba; conjunto "+fmt(R.qch,2)+" m³/h a "+fmt(R.hc,1)+" mca",[]],
    ["Vazão e pressão efetivas na saída do recalque","Cruzamento dos dados da bomba com os dados do sistema (ponto de operação): interseção da curva do conjunto com a curva do sistema, Hs = Hg + J·(L + Leq). Curva de cada bomba: H = H0 − a·Q², passando por Qn e Hn; em paralelo, H = H0 − a·(Q/n)²; em série, H = n·(H0 − a·Q²)","Qef = "+fmt(R.qefh,2)+" m³/h; pressão efetiva = "+fmt(R.hop,2)+" mca (Hg = "+fmt(R.hg,1)+" m; L + Leq = "+fmt(R.lRec,0)+" + "+fmt(R.leqRec,1)+" m; H0 (altura máxima, shut-off) = "+fmt(R.h0,1)+" mca"+(R.h0Est?", estimada em 1,2 × Hn":"")+")",["tigre|p. 35 e 36"]],
    ["Potência","Potência hidráulica no ponto de operação: P = γ · Q · H (W), com γ = 9810 N/m³; rendimento resultante = P ÷ potência instalada","P = 9810 × "+fmt(R.qef/1000,5)+" × "+fmt(R.hop,2)+" = "+fmt(R.phid,0)+" W"+(R.eta!=null?"; instalada "+fmt(R.potTot,0)+" W; rendimento "+fmt(R.eta*100,0)+"%":""),[]],
-   ["Reposição pelo recalque (6.7.2)","t = CD ÷ (Qef × 3600) ≤ 6 h","t = "+fmt(R.cd)+" ÷ ("+fmt(R.qef,2)+" × 3600) = "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h",["nbr2020|item 6.7.2"]],
+   ["Atendimento da vazão de recalque","Qef ≥ Qr; tempo de funcionamento t = CD ÷ (Qef × 3600) ≤ NF","Qef = "+fmt(R.qefh,2)+" m³/h "+(R.recOk?"≥":"<")+" Qr = "+fmt(R.qrh,2)+" m³/h; t = "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h (NF = "+fmt(R.nf,1)+" h)",[]],
   ]},
   {g:"Reservatório inferior",rows:[
    ["Volume do inferior","Vi = Rc − Cs, calculado automaticamente","Vi = "+fmt(R.rCons)+" − "+fmt(R.cSup)+" ≈ "+fmt(R.vInf)+" L",["nbr2020|item 6.5.6.2"]],
@@ -1239,7 +1241,7 @@ function dimRows(R){const I=S.inp,ok=b=>b?"atende":"não atende",
  comp=g=>g.list.map((c,i)=>[(c.nc>1?"Compartimento "+c.r+"."+c.k:"Reservatório "+c.r)+(g.n>1&&i===g.iMin?" (menor)":""),fmt(c.c,2)+" × "+fmt(c.l,2)+" m; altura útil "+fmt(c.hu,2)+" m; altura total "+fmt(c.ht,2)+" m; "+fmt(c.v)+" L"+(c.ht<c.hu-1e-9?" (altura total menor que a útil)":"")]),
  AS={unica:"Bomba única",paralelo:R.nb+" bombas iguais em paralelo",serie:R.nb+" bombas iguais em série"}[R.assoc];
  return {
- geral:[["Tipo de edificação",esc(I.tipo)],["Quantidade total",fmt(R.qt)+" "+plural(R.unidade)+" ("+I.qAndar+" por andar em "+I.andares+" andares)"],["Consumo diário",fmt(R.cd)+" L/dia"],["Vazão média diária",fmt(R.qmed,2)+" L/s ("+fmt(R.qmed*3.6,2)+" m³/h)"],["Vazão de projeto do abastecimento (repor o CD em 6 h)",fmt(R.qreq,2)+" L/s ("+fmt(R.qreqh,2)+" m³/h)"],["Vazão de projeto da distribuição (0,3·√ΣP)",fmt(R.qs,2)+" L/s (ΣP = "+fmt(R.pt,1)+")"],
+ geral:[["Tipo de edificação",esc(I.tipo)],["Quantidade total",fmt(R.qt)+" "+plural(R.unidade)+" ("+I.qAndar+" por andar em "+I.andares+" andares)"],["Consumo diário",fmt(R.cd)+" L/dia"],["Vazão de recalque (CD ÷ NF)",fmt(R.qr,2)+" L/s ("+fmt(R.qrh,2)+" m³/h), com a bomba funcionando "+fmt(R.nf,1)+" h por dia"],["Vazão de projeto da distribuição (0,3·√ΣP)",fmt(R.qs,2)+" L/s (ΣP = "+fmt(R.pt,1)+")"],
   ["Reserva de consumo",fmt(R.rCons)+" L ("+fmt(R.dias,1)+" dia(s))"],["Reserva de manutenção",fmt(R.rManut)+" L ("+fmt(I.tManut,1)+" h)"],["Reserva técnica de incêndio",fmt(R.rInc)+" L ("+fmt(I.pctInc,0)+"% do consumo diário)"],
   ["Volume total reservado",fmt(R.vTot)+" L"],["Armazenamento sem incêndio",fmt(R.diasArm,1)+" dias"]],
  sup:[["Consumo no superior",fmt(R.cSup)+" L"+(R.supAum?" (ajustado de "+fmt(R.cSupPct)+" L para atender à manutenção)":" ("+fmt(I.pctSup,0)+"% da reserva de consumo)")],["Reserva de incêndio",fmt(R.rInc)+" L"],
@@ -1259,7 +1261,7 @@ function dimRows(R){const I=S.inp,ok=b=>b?"atende":"não atende",
   ["Vazão efetiva na saída do recalque",fmt(R.qef,2)+" L/s ("+fmt(R.qefh,2)+" m³/h)"],["Pressão efetiva",fmt(R.hop,2)+" mca ("+fmt(R.hop*9.81,0)+" kPa)"],
   ["Velocidade na saída do recalque",fmt(R.vef,2)+" m/s ("+(R.vef<=VMAX+1e-9?"até 3 m/s":"acima de 3 m/s")+")"],
   ["Potência hidráulica",fmt(R.phid,0)+" W"+(R.eta!=null?"; rendimento resultante "+fmt(R.eta*100,0)+"%":"")],
-  ["Reposição pelo recalque (6.7.2)",(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h, mínimo de "+fmt(R.qreqh,2)+" m³/h: "+ok(R.recOk)]]
+  ["Atendimento da vazão de recalque",fmt(R.qefh,2)+" m³/h efetivos para "+fmt(R.qrh,2)+" m³/h de projeto; "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h de funcionamento por dia: "+ok(R.recOk)]]
 }}
 /* ============ RELATÓRIO DE DIMENSIONAMENTO (escala de cinza) ============ */
 const stG={ok:"Atende",warn:"Atenção",bad:"Não atende"};

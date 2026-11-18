@@ -503,7 +503,7 @@ const jFWH=(q,d)=>0.0008695*Math.pow(q,1.75)*Math.pow(d,-4.75);
    Hd = J(Q)·(L + Leq) + pBoia(Q ÷ n); a vazão Q é obtida por bisseção */
 function alimOf(de,I,cd,cap,nB){
   cap=cap||VMAX;nB=Math.max(1,nB||1);
-  const Hb=(+I.pMin||0)-(+I.dzAlim||0),L=Math.max(+I.lAlim||1,1),d=pvcByDn(de).di/1000,A=areaOf(de),Leq=leqOf(de,I.fAl,FIT_AL);
+  const Hb=(+I.pMin||0),L=Math.max(+I.lAlim||1,1),d=pvcByDn(de).di/1000,A=areaOf(de),Leq=leqOf(de,I.fAl,FIT_AL);
   const out={de,Hb,H:Hb,L,Leq,A,nB};
   const f=q=>Hb-jFWH(q/1000,d)*(L+Leq)-pBoiaOf(q*60/nB);
   let q=0;if(Hb>0){let lo=0,hi=50;for(let k=0;k<60;k++){const m=(lo+hi)/2;if(f(m)>0)lo=m;else hi=m}q=lo}
@@ -542,15 +542,15 @@ function calc(){
     (R.infUnicoOk?["ok","Compartimento único permitido: o consumo durante a manutenção ("+fmt(R.rManut)+" L) é menor que o volume de consumo do superior ("+fmt(R.cSup)+" L), item 6.5.6.7"]:
     ["bad","Compartimento único não permitido: o consumo durante a manutenção ("+fmt(R.rManut)+" L) não é menor que o volume de consumo do superior ("+fmt(R.cSup)+" L), item 6.5.6.7"]);
   /* Diâmetros: o valor calculado é o padrão; o usuário pode adotar outro (I.dMan), e o app verifica se atende ao critério */
-  const VM=I.vMan||{},vlim=k=>+VM[k]>0?+VM[k]:null;R.vMan=VM;
-  R.vCapAl=vlim("al")||VMAX;R.vCapRec=vlim("rec");R.vCapSai=vlim("sai")||VMAX;
+  const VM={};R.vMan=VM;
+  R.vCapAl=Infinity;R.vCapRec=null;R.vCapSai=VMAX;
   const MAN=I.dMan||{},pick=(k,c)=>{const m=+MAN[k];return m&&PVC.some(p=>p.dn===m)?m:c};R.dMan=MAN;
   const lbl=de=>dn(de);
   /* Alimentador predial: vazão pela pressão mínima, desnível, comprimento e diâmetro; padrão = menor DN que repõe em 6 h */
-  R.nBoia=+I.nBoia>0?Math.round(+I.nBoia):R.nCI;R.dalMin=(PVC.find(p=>alimOf(p.dn,I,R.cd,R.vCapAl,R.nBoia).ok)||{}).dn||null;
+  R.nBoia=R.nCI;R.dalMin=(PVC.find(p=>alimOf(p.dn,I,R.cd,R.vCapAl,R.nBoia).ok)||{}).dn||null;
   /* se nenhum DN repõe em 6 h, a boia limita a vazão: adota o menor DN que já atinge 95% da vazão máxima possível */
   if(R.dalMin)R.dalCalc=R.dalMin;else{const qx=alimOf(PVC[PVC.length-1].dn,I,R.cd,R.vCapAl,R.nBoia).q;R.dalCalc=(PVC.find(p=>alimOf(p.dn,I,R.cd,R.vCapAl,R.nBoia).q>=0.95*qx)||PVC[PVC.length-1]).dn;R.boiaLimita=true}
-  R.al=alimOf(pick("al",R.dalCalc),I,R.cd,R.vCapAl,R.nBoia);R.pEstMax=(+I.pMax||0)-(+I.dzAlim||0);R.dal=R.al.de;R.qal=R.al.q;R.valim=R.al.v;R.tRepReal=R.al.tRep;
+  R.al=alimOf(pick("al",R.dalCalc),I,R.cd,R.vCapAl,R.nBoia);R.alMax=alimOf(R.al.de,Object.assign({},I,{pMin:Math.max(+I.pMax||0,+I.pMin||0)}),R.cd,Infinity,R.nBoia);R.vAlMax=R.alMax.v;R.dal=R.al.de;R.qal=R.al.q;R.valim=R.al.v;R.tRepReal=R.al.tRep;
   /* Recalque: repõe o consumo diário em 6 h (6.7.2); diâmetro econômico por Forchheimer com X = 6/24 */
   R.hRec=T_REP;R.qrec=R.cd/(T_REP*3600);R.qrech=R.qrec*3.6;
   R.drt=1.3*Math.sqrt(R.qrec/1000)*Math.pow(R.hRec/24,.25)*1000;R.drecCalc=R.vCapRec?(PVC.find(p=>R.qrec/1000/areaOf(p.dn)<=R.vCapRec)||PVC[PVC.length-1]).dn:com(R.drt);R.drec=pick("rec",R.drecCalc);R.vrec=R.qrec/1000/areaOf(R.drec);
@@ -567,7 +567,7 @@ function calc(){
   /* Verificação de cada diâmetro adotado */
   const minChk=(de,c,txt)=>de<c?["bad","Menor que o mínimo calculado ("+lbl(c)+"): "+txt]:de>c?["ok","Acima do mínimo calculado ("+lbl(c)+")"]:["ok","Conforme o cálculo"];
   const vChk=(v,de,c,txt)=>v>VMAX+1e-9?["bad","Velocidade de "+fmt(v,2)+" m/s, acima de 3 m/s. Calculado: "+lbl(c)]:de<c?["warn","Abaixo do calculado ("+lbl(c)+"): "+txt]:de>c?["ok","Acima do calculado ("+lbl(c)+")"]:["ok","Conforme o cálculo"];
-  const alChk=R.al.H<=0?["bad","A pressão mínima não vence o desnível até o reservatório"]:!R.al.ok?["bad","Não repõe o consumo diário em 6 h (item 6.7.2)"+(R.dalMin?". Mínimo: "+lbl(R.dalMin):". Nenhum diâmetro resolve: a torneira de boia limita a vazão. Aumente o número de boias ou a pressão")]:R.dal>R.dalCalc?["ok","Acima do mínimo calculado ("+lbl(R.dalCalc)+")"]:["ok","Repõe o consumo diário em "+fmt(R.tRepReal,1)+" h"];
+  const alChk=R.vAlMax>VMAX+1e-9&&R.al.H>0&&R.al.ok?["warn","Com a pressão máxima, a velocidade chega a "+fmt(R.vAlMax,2)+" m/s, acima de 3 m/s"]:R.al.H<=0?["bad","A pressão mínima não vence o desnível até o reservatório"]:!R.al.ok?["bad","Não repõe o consumo diário em 6 h (item 6.7.2)"+(R.dalMin?". Mínimo: "+lbl(R.dalMin):". Nenhum diâmetro resolve: a torneira de boia limita a vazão. Aumente a pressão ou o número de compartimentos do inferior (uma boia por compartimento)")]:R.dal>R.dalCalc?["ok","Acima do mínimo calculado ("+lbl(R.dalCalc)+")"]:["ok","Repõe o consumo diário em "+fmt(R.tRepReal,1)+" h"];
   R.tubos=[
    {k:"al",n:"Alimentador predial",r:"inf",q:R.qal,de:R.dal,calc:R.dalCalc,v:R.valim,chk:alChk,reg:"Registro de fechamento a montante e próximo do reservatório, e torneira de boia na entrada (6.5.8.1 e 6.5.8.2)",crit:"Menor DN que repõe o consumo diário em 6 h"},
    {k:"rec",n:"Recalque (entrada do superior)",r:"sup",q:R.qrec,de:R.drec,calc:R.drecCalc,v:R.vrec,chk:vChk(R.vrec,R.drec,R.drecCalc,"diâmetro econômico de Forchheimer"),reg:"Registro de fechamento próximo ao reservatório superior (6.5.8.2)",crit:R.vCapRec?"Repõe o consumo diário em 6 h; v ≤ "+fmt(R.vCapRec,2)+" m/s":"Repõe o consumo diário em 6 h; Forchheimer"},
@@ -919,13 +919,12 @@ function buildDim(){
     geoIn("geoInf")+F("fInf","Folga até a tampa","m","0.05")+
     h3("Entrada pelo alimentador predial")+note("A vazão é calculada pela pressão de trabalho mínima, pelo diâmetro e pela perda de carga até a entrada do reservatório. A pressão máxima verifica a pressão estática na torneira de boia.")+
     '<div class="f"><label for="selAl">Diâmetro do alimentador</label><select id="selAl" data-man="al"></select><span class="u"></span></div>'+
-    F("pMin","Pressão de trabalho mínima","mca","0.5")+F("pMax","Pressão de trabalho máxima","mca","0.5")+
-    '<div class="f"><label for="i_nBoia">Torneiras de boia de alta vazão (0 = uma por compartimento)</label><input type="number" id="i_nBoia" data-k="nBoia" min="0" step="1" value="'+(+I.nBoia||0)+'"><span class="u">boias</span></div>'+
-    note("Conexões do alimentador, incluindo a entrada de borda.")+'<div id="fitAl"></div>'+F("lAlim","Comprimento do alimentador (com conexões)","m","1","1")+F("dzAlim","Desnível até a entrada do reservatório","m","0.1","-50")+
+    F("pMin","Pressão de trabalho mínima (na entrada do reservatório)","mca","0.5")+F("pMax","Pressão de trabalho máxima (na entrada do reservatório)","mca","0.5")+
+    h3("Perdas de carga")+F("lAlim","Comprimento do tubo do alimentador","m","1","1")+note("Conexões do alimentador, incluindo a entrada de borda. A torneira de boia de alta vazão (uma por compartimento) entra automaticamente.")+'<div id="fitAl"></div>'+
    '</div><div class="card" id="resInf"></div></div>'+
 
   '<div class="sec-title"><span class="tag">D</span><h2>Diâmetros das tubulações</h2></div>'+
-   '<div class="card"><p class="sub" style="margin-top:0">Cada diâmetro vem preenchido com o valor calculado. Para adotar outro, escolha na lista. A velocidade também vem calculada e pode ser editada: o valor digitado passa a ser a velocidade máxima de projeto, e o diâmetro calculado é refeito. Apague o valor para voltar ao automático. O app avisa quando algo não atende ao critério.</p><div id="tubAlert"></div><div id="tubos"></div></div>'+
+   '<div class="card"><p class="sub" style="margin-top:0">Cada diâmetro vem preenchido com o valor calculado. Para adotar outro, escolha na lista. A velocidade é sempre calculada. O app avisa quando algo não atende ao critério.</p><div id="tubAlert"></div><div id="tubos"></div></div>'+
   '<p class="foot-ref">Os diâmetros estão em DN (diâmetro nominal) de tubo de PVC soldável. As fórmulas e as referências de cada cálculo estão na aba Memorial. São diâmetros de pré-dimensionamento; o projeto executivo exige verificação completa de pressões e perdas de carga.</p>';
 }
 const camT=g=>{const am=g.amin;return '<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Compartimento</th><th class="n">C × L (m)</th><th class="n">Área (m²)</th><th class="n">Altura útil (m)</th><th class="n">Volume (L)</th></tr></thead><tbody>'+
@@ -935,7 +934,7 @@ const pillRow=(k,t)=>'<div style="margin:8px 0">'+pill(k,t)+'</div>';
 const selMan=x=>'<select data-man="'+x.k+'" aria-label="Diâmetro de '+x.n+', '+(x.r==="sup"?"superior":"inferior")+'"><option value="">'+dn(x.calc)+' (calculado)</option>'+PVC.map(p=>'<option value="'+p.dn+'"'+(x.man&&x.de===p.dn?" selected":"")+'>DN '+p.nom+'</option>').join("")+'</select>';
 const velIn=x=>'<input type="number" class="vel" step="0.05" min="0.1" data-vel="'+x.k+'" value="'+num(x.vm||x.v)+'" aria-label="Velocidade de '+x.n+'"'+(x.vm?' style="border-color:var(--brass)"':'')+'><br><small style="color:var(--ink-soft)">'+(x.vm?"real: "+fmt(x.v,2)+" m/s":"automática")+'</small>';
 const tubT=(rows,full)=>'<div class="tbl-wrap"><table><thead><tr><th>Tubulação</th><th>Reservatório</th><th class="n">Diâmetro</th><th class="n">Vazão</th><th class="n">Velocidade</th><th>Situação</th>'+(full?'<th>Registro ou válvula</th>':'')+'</tr></thead><tbody>'+
-  rows.map(x=>'<tr><td><b>'+x.n+'</b><br><small style="color:var(--ink-soft)">'+x.crit+'</small></td><td>'+(x.r==="sup"?"Superior":"Inferior")+'</td><td class="n" style="white-space:nowrap">'+(full?selMan(x):'<b>'+dn(x.de)+'</b>')+'</td><td class="n">'+(x.q!=null?fmt(x.q,2)+" L/s":"—")+'</td><td class="n">'+(x.v==null?"—":full?velIn(x):fmt(x.v,2)+" m/s")+'</td><td>'+pill(x.chk[0],x.chk[1])+'</td>'+(full?'<td>'+x.reg+'</td>':'')+'</tr>').join("")+'</tbody></table></div>';
+  rows.map(x=>'<tr><td><b>'+x.n+'</b><br><small style="color:var(--ink-soft)">'+x.crit+'</small></td><td>'+(x.r==="sup"?"Superior":"Inferior")+'</td><td class="n" style="white-space:nowrap">'+(full?selMan(x):'<b>'+dn(x.de)+'</b>')+'</td><td class="n">'+(x.q!=null?fmt(x.q,2)+" L/s":"—")+'</td><td class="n">'+(x.v==null?"—":fmt(x.v,2)+" m/s")+'</td><td>'+pill(x.chk[0],x.chk[1])+'</td>'+(full?'<td>'+x.reg+'</td>':'')+'</tr>').join("")+'</tbody></table></div>';
 /* redesenha os resultados sem perder o foco do campo de conexões que está sendo editado */
 function renderDimResultsKeep(t){const sel='input[data-fit="'+t.dataset.fit+'"][data-p="'+t.dataset.p+'"]',pos=t.selectionStart;renderDimResults();const n=document.querySelector(sel);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}}}
 function renderDimResults(){
@@ -963,12 +962,12 @@ function renderDimResults(){
    sub3("Compartimentos e dimensões")+camT(R.gI)+Rr("Altura útil (calculada)",fmt(R.gI.h,2),"m")+Rr("Altura total (com folga)",fmt(R.htI,2),"m")+pillRow(R.camChkI[0],R.camChkI[1])+
    sub3("Bomba de recalque")+Rr("Vazão nominal da bomba",fmt(R.qrec,2)+" L/s ("+fmt(R.qrech,2)+" m³/h)")+
    Rr("Perda de carga no recalque ("+fmt(R.lRec,0)+" m + "+fmt(R.leqRec,1)+" m equivalentes)",fmt(R.hfRec,2),"mca")+Rr("Altura manométrica da bomba",fmt(R.hman,2),"mca")+
-   sub3("Entrada pelo alimentador predial")+Rr("Carga disponível (pressão mínima − desnível)",fmt(R.al.Hb,2),"mca")+Rr("Vazão do alimentador "+dn(R.dal),fmt(R.qal,2),"L/s")+
-   '<div class="r"><span>Velocidade (editável)</span><b>'+velIn(R.tubos.find(x=>x.k==="al"))+'</b></div>'+Rr("Perda distribuída no tubo ("+fmt(R.al.L,0)+" m)",fmt(R.al.hfD,2),"mca")+Rr("Perda localizada nas conexões ("+fmt(R.al.Leq,1)+" m equivalentes)",fmt(R.al.hfL,2),"mca")+
+   sub3("Entrada pelo alimentador predial")+Rr("Carga disponível (pressão mínima)",fmt(R.al.Hb,2),"mca")+Rr("Vazão do alimentador "+dn(R.dal),fmt(R.qal,2),"L/s")+
+   Rr("Velocidade com a pressão mínima",fmt(R.valim,2),"m/s")+Rr("Velocidade com a pressão máxima",fmt(R.vAlMax,2),"m/s")+(R.vAlMax>VMAX+1e-9?pillRow("warn","Com a pressão máxima, a velocidade passa de 3 m/s: prever registro de regulagem ou válvula redutora de pressão"):"")+Rr("Perda distribuída no tubo ("+fmt(R.al.L,0)+" m)",fmt(R.al.hfD,2),"mca")+Rr("Perda localizada nas conexões ("+fmt(R.al.Leq,1)+" m equivalentes)",fmt(R.al.hfL,2),"mca")+
    Rr("Pressão disponível na saída do alimentador",fmt(R.al.pRes,2),"mca")+Rr("Perda na torneira de boia de alta vazão ("+R.al.nB+" boia(s), "+fmt(R.al.q*60/R.al.nB,0)+" L/min cada)",fmt(R.al.pBoia,2),"mca")+
    (R.al.lim?pillRow("warn","Vazão limitada pela velocidade máxima de "+fmt(R.vCapAl,2)+" m/s"):"")+Rr("Tempo para repor o consumo diário",isFinite(R.tRepReal)?fmt(R.tRepReal,1):"—","h")+
    (R.al.H<=0?pillRow("bad","A pressão mínima não vence o desnível até o reservatório"):
-    pillRow(R.al.ok?"ok":"bad",R.al.ok?"O "+dn(R.dal)+" repõe o consumo diário em até 6 h (item 6.7.2)":"O "+dn(R.dal)+" não repõe o consumo diário em 6 h (item 6.7.2)"+(R.dalMin?". Seria preciso "+dn(R.dalMin):". Nenhum diâmetro resolve, porque a torneira de boia limita a vazão: aumente o número de boias ou a pressão")));
+    pillRow(R.al.ok?"ok":"bad",R.al.ok?"O "+dn(R.dal)+" repõe o consumo diário em até 6 h (item 6.7.2)":"O "+dn(R.dal)+" não repõe o consumo diário em 6 h (item 6.7.2)"+(R.dalMin?". Seria preciso "+dn(R.dalMin):". Nenhum diâmetro resolve, porque a torneira de boia limita a vazão: aumente a pressão ou o número de compartimentos do inferior (uma boia por compartimento)")));
   document.getElementById("fitAl").innerHTML=fitIn("fAl",FIT_AL,R.dal);document.getElementById("fitRec").innerHTML=fitIn("fRec",FIT_REC,R.drec);
   const sa=document.getElementById("selAl");sa.innerHTML='<option value="">'+dn(R.dalCalc)+' (calculado)</option>'+PVC.map(p=>'<option value="'+p.dn+'"'+(+I.dMan.al===p.dn?" selected":"")+'>DN '+p.nom+'</option>').join("");
   document.getElementById("tubAlert").innerHTML=R.tubAlerta.map(t=>pillRow(t.chk[0],t.n+" ("+(t.r==="sup"?"superior":"inferior")+"), "+dn(t.de)+": "+t.chk[1])).join("");
@@ -1081,7 +1080,7 @@ function calcMemo(){
    ["Reserva de consumo","Rc = CD × dias de reservação, entre 1 dia (item 6.5.6.2) e 3 dias (nota do item 6.5.6.3); usual de 2 dias","Rc = "+fmt(R.cd)+" × "+fmt(R.dias,1)+" = "+fmt(R.rCons)+" L",["nbr2020|itens 6.5.6.2 e 6.5.6.3","tigre|p. 60"]],
    ["Reserva de manutenção","Consumo no horário de pico durante a manutenção: Rm = CD × duração ÷ 24 (12 h, proposta do TCC)","Rm = "+fmt(R.cd)+" × "+fmt(I.tManut,1)+" ÷ 24 = "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5","tcc"]],
    ["Reserva técnica de incêndio","RTI = porcentagem × CD. Em prédios, acrescentam-se de 15% a 20% do consumo para reserva de incêndio. Para aprovação, prevalece a norma do Corpo de Bombeiros (no Ceará, NT 006/2008, Tabela 3)","RTI = "+fmt(I.pctInc,0)+"% × "+fmt(R.cd)+" = "+fmt(R.rInc)+" L",["tigre|p. 60","cbmce|item 4.9.2"]],
-   ["Velocidade máxima","v = Q ÷ A ≤ 3 m/s, com A pela área interna do tubo. A velocidade de projeto pode ser editada na aba Dimensionamento","Verificada em todas as tubulações com vazão"+(Object.keys(R.vMan).length?"; velocidade de projeto editada: "+Object.entries(R.vMan).map(([k,v])=>({al:"alimentador",rec:"recalque",sai:"saída"}[k]||k)+" "+fmt(v,2)+" m/s").join(", "):""),["tigre|p. 33","nbr5648"]]]},
+   ["Velocidade máxima","v = Q ÷ A ≤ 3 m/s, com A pela área interna do tubo.","Verificada em todas as tubulações com vazão",["tigre|p. 33","nbr5648"]]]},
   {g:"Reservatório superior",rows:[
    ["Parcela de consumo","Cs = "+fmt(I.pctSup,0)+"% × Rc (usual: 40% no superior e 60% no inferior)","Cs = "+fmt(R.cSupPct)+" L"+(R.supAum?", ajustada para "+fmt(R.cSup)+" L":""),["tigre|p. 60"]],
    ["Menor compartimento (6.5.6.5)","O menor compartimento deve atender ao consumo no horário de pico durante a manutenção. Com a mesma lâmina em todos: Cs × (Amín ÷ Atotal) ≥ Rm","Cmín = "+fmt(R.cSup)+" × "+fmt(R.gS.amin,2)+" ÷ "+fmt(R.gS.A,2)+" = "+fmt(R.cmin)+" L "+(R.cmin+0.5>=R.rManut?"≥":"<")+" "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5"]],
@@ -1098,10 +1097,11 @@ function calcMemo(){
    ["Altura manométrica da bomba","Hman = desnível geométrico + J(Qr) · (L + Leq), com J por Fair-Whipple-Hsiao e Leq das conexões do recalque","Hman = "+fmt(+I.hgRec||0,1)+" + "+fmt(R.jRec,4)+" × ("+fmt(R.lRec,0)+" + "+fmt(R.leqRec,1)+") = "+fmt(R.hman,2)+" mca",["tigre|p. 35 e 36"]],
    ["Altura útil","h = Vi ÷ soma das áreas dos compartimentos","h = "+fmt(R.vInf/1000,2)+" m³ ÷ "+fmt(R.gI.A,2)+" m² = "+fmt(R.gI.h,2)+" m (altura total com folga: "+fmt(R.htI,2)+" m)",[]],
    ["Compartimento único (6.5.6.7)","Permitido só se Rm < Cs (consumo durante a manutenção menor que o consumo guardado no superior)",fmt(R.rManut)+" L "+(R.infUnicoOk?"<":"≥")+" "+fmt(R.cSup)+" L: "+(R.infUnicoOk?"permitido":"não permitido"),["nbr2020|item 6.5.6.7"]],
-   ["Carga disponível no alimentador","Hd = pressão de trabalho mínima − desnível","Hd = "+fmt(I.pMin,1)+" − "+fmt(I.dzAlim,1)+" = "+fmt(R.al.Hb,2)+" mca",[]],
+   ["Carga disponível no alimentador","Hd = pressão de trabalho mínima na entrada do reservatório","Hd = "+fmt(R.al.Hb,2)+" mca",[]],
+   ["Velocidade com a pressão máxima","Mesmo cálculo da vazão com a pressão de trabalho máxima; a velocidade deve ficar até 3 m/s","v = "+fmt(R.vAlMax,2)+" m/s com "+fmt(+I.pMax||0,1)+" mca",["tigre|p. 33"]],
    ["Perda localizada no alimentador","Comprimento equivalente Leq = Σ (quantidade × Le) das conexões, inclusive a entrada de borda","Leq = "+fmt(R.al.Leq,1)+" m; perda localizada = J × Leq = "+fmt(R.al.hfL,2)+" mca",["tigre|p. 36"]],
    ["Torneira de boia de alta vazão","Perda na boia pela curva pressão × vazão do fabricante: 66 L/min a 5 mca, 83 L/min a 10 mca, 220 L/min a 50 mca e 253 L/min a 75 mca, interpolada; uma boia por compartimento",R.al.nB+" boia(s) com "+fmt(R.al.q*60/R.al.nB,0)+" L/min cada: "+fmt(R.al.pBoia,2)+" mca",["wavin|p. 3"]],
-   ["Vazão do alimentador","Fair-Whipple-Hsiao para PVC até 100 mm: J = 0,0008695 · Q^1,75 · D^−4,75 (SI). Q é a vazão que satisfaz Hd = J·(L + Leq) + pBoia, limitada a v = 3 m/s","J = "+fmt(R.al.J,4)+" m/m, perda distribuída "+fmt(R.al.hfD,2)+" mca, "+dn(R.dal)+" (Di = "+fmt(pvcByDn(R.dal).di,1)+" mm): Q = "+fmt(R.qal,2)+" L/s, v = "+fmt(R.valim,2)+" m/s"+(R.dalMin?". Menor DN que repõe em 6 h: "+dn(R.dalMin):"")+(+R.dMan.al?" (adotado manualmente)":""),["tigre|p. 35","nbr5648"]],
+   ["Vazão do alimentador","Fair-Whipple-Hsiao para PVC até 100 mm: J = 0,0008695 · Q^1,75 · D^−4,75 (SI). Q é a vazão que satisfaz Hd = J·(L + Leq) + pBoia","J = "+fmt(R.al.J,4)+" m/m, perda distribuída "+fmt(R.al.hfD,2)+" mca, "+dn(R.dal)+" (Di = "+fmt(pvcByDn(R.dal).di,1)+" mm): Q = "+fmt(R.qal,2)+" L/s, v = "+fmt(R.valim,2)+" m/s"+(R.dalMin?". Menor DN que repõe em 6 h: "+dn(R.dalMin):"")+(+R.dMan.al?" (adotado manualmente)":""),["tigre|p. 35","nbr5648"]],
    ["Reposição (6.7.2)","t = CD ÷ (Q × 3600) ≤ 6 h","t = "+fmt(R.cd)+" ÷ ("+fmt(R.qal,2)+" × 3600) = "+(isFinite(R.tRepReal)?fmt(R.tRepReal,1):"—")+" h",["nbr2020|item 6.7.2"]],
    ["Extravasor","Bitola comercial imediatamente superior à da entrada de água",dn(R.dexiCalc)+", uma acima do alimentador "+dn(R.dal)+man("exi",R.dexi),["cj2023|p. 41"]],
    ["Limpeza","Igual ou maior que a tubulação de entrada, e não menor que 32 mm",dn(R.dliCalc)+man("limi",R.dli),["tigre|p. 74","cj2023|p. 41"]]]}

@@ -520,30 +520,29 @@ function calc(){
   R.dias=Math.min(3,Math.max(1,+I.dias||1));R.diasFora=!(+I.dias>=1&&+I.dias<=3);
   R.rCons=R.cd*R.dias;R.rManut=R.cd*I.tManut/24;R.rInc=R.cd*(+I.pctInc||0)/100;R.rTot=R.rCons+R.rInc;
   R.pctIncTot=R.rTot>0?R.rInc/R.rTot*100:0;
-  /* Geometria: cada reservatório tem um ou mais compartimentos, com comprimento, largura, altura útil (do fundo à lâmina d'água)
-     e altura total (do fundo à base da tampa) informados. Volume útil de cada compartimento = C × L × altura útil */
-  const geoOf=G=>{const list=[];let A=0,V=0;G.forEach((r,ri)=>r.comp.forEach((c,ci)=>{const cc=Math.max(+c.c||0,0),ll=Math.max(+c.l||0,0),hu=Math.max(+c.hu||0,0),ht=Math.max(+c.ht||0,0),a=cc*ll,v=a*hu*1000;
-      A+=a;V+=v;list.push({r:ri+1,k:ci+1,nc:r.comp.length,c:cc,l:ll,hu,ht,a,v,folga:ht-hu})}));
-    const vmin=list.length?Math.min(...list.map(x=>x.v)):0,iMin=list.findIndex(x=>x.v===vmin);
-    return{list,A,V,vmin,iMin,n:list.length,nRes:G.length,htBad:list.filter(x=>x.ht<x.hu-1e-9)}};
-  R.gS=geoOf(I.geoSup);R.gI=geoOf(I.geoInf);R.nCS=R.gS.n;R.nS=R.gS.nRes;R.nI=R.gI.nRes;R.nCI=R.gI.n;
+  /* Geometria: cada reservatório tem um ou mais compartimentos, com comprimento, largura e altura total (do fundo à base da tampa) informados.
+     A altura útil é calculada: todos os compartimentos do mesmo nível trabalham com a mesma lâmina, h = V ÷ soma das áreas */
+  const geoOf=(G,V)=>{const list=[];let A=0;G.forEach((r,ri)=>r.comp.forEach((c,ci)=>{const cc=Math.max(+c.c||0,0),ll=Math.max(+c.l||0,0),a=cc*ll;A+=a;
+      list.push({r:ri+1,k:ci+1,nc:r.comp.length,c:cc,l:ll,ht:Math.max(+c.ht||0,0),a})}));
+    const h=A>0?V/1000/A:0;list.forEach(x=>{x.hu=h;x.v=x.a*h*1000;x.folga=x.ht-h});
+    const amin=list.length?Math.min(...list.map(x=>x.a)):0,iMin=list.findIndex(x=>x.a===amin);
+    return{list,A,h,V:A>0?V:0,amin,vmin:amin*h*1000,iMin,n:list.length,nRes:G.length,htBad:list.filter(x=>x.ht<h-1e-9)}};
+  const g0=geoOf(I.geoSup,0);R.nCS=g0.n;
   /* 6.5.6.5: o menor compartimento do superior deve atender ao consumo no horário de pico durante a manutenção (Rm).
-     A parcela de consumo do menor compartimento é Cs × (volume do menor ÷ volume total) */
-  R.cSupPct=I.pctSup/100*R.rCons;R.cSupMin=R.nCS>1&&R.gS.vmin>0?R.rManut*R.gS.V/R.gS.vmin:0;
+     Como a lâmina é a mesma, a parcela de consumo do menor compartimento é Cs × (área do menor ÷ área total) */
+  R.cSupPct=I.pctSup/100*R.rCons;R.cSupMin=R.nCS>1&&g0.amin>0?R.rManut*g0.A/g0.amin:0;
   R.cSup=Math.min(Math.max(R.cSupPct,R.cSupMin),R.rCons);R.supAum=R.cSup>R.cSupPct+0.5;R.supFalta=R.cSupMin>R.rCons+0.5;
   R.cInf=Math.max(R.rCons-R.cSup,0);
-  /* Volume necessário (calculado) e volume adotado (soma dos compartimentos informados) */
   R.vSup=Math.ceil((R.cSup+R.rInc)/100)*100;R.vInf=Math.ceil(R.cInf/100)*100;R.vTot=R.vSup+R.vInf;
   R.diasArm=R.cd>0?(R.vTot-R.rInc)/R.cd:0;R.autH=R.diasArm*24;
-  R.vSupAd=R.gS.V;R.vInfAd=R.gI.V;R.supVolOk=R.vSupAd+0.5>=R.vSup;R.infVolOk=R.vInfAd+0.5>=R.vInf;
-  /* consumo guardado no menor compartimento: o volume dele menos a sua parte da reserva de incêndio */
-  R.vminS=R.gS.vmin;R.cmin=R.gS.V>0?R.gS.vmin*Math.max(1-R.rInc/R.gS.V,0):0;
-  R.camChk=R.gS.V<=0?["bad","Informe o comprimento, a largura e a altura útil dos compartimentos"]:R.nCS<2?["bad","O superior deve ter 2 ou mais compartimentos para permitir a manutenção sem interromper o abastecimento (6.5.6.5)"]:
+  R.gS=geoOf(I.geoSup,R.vSup);R.gI=geoOf(I.geoInf,R.vInf);R.nS=R.gS.nRes;R.nI=R.gI.nRes;R.nCI=R.gI.n;
+  R.vminS=R.gS.vmin;R.cmin=R.gS.A>0?R.cSup*R.gS.amin/R.gS.A:0;
+  R.camChk=R.gS.A<=0?["bad","Informe o comprimento e a largura dos compartimentos"]:R.nCS<2?["bad","O superior deve ter 2 ou mais compartimentos para permitir a manutenção sem interromper o abastecimento (6.5.6.5)"]:
     (R.cmin+0.5>=R.rManut?["ok","O menor compartimento guarda "+fmt(R.cmin)+" L de consumo e atende "+fmt(I.tManut,1)+" h de consumo no horário de pico ("+fmt(R.rManut)+" L) sem comprometer o abastecimento (6.5.6.5)"]:
-    ["bad","O menor compartimento guarda "+fmt(R.cmin)+" L de consumo e não atende "+fmt(I.tManut,1)+" h de consumo no horário de pico ("+fmt(R.rManut)+" L). Aumente as dimensões do menor compartimento (6.5.6.5)"]);
+    ["bad","O menor compartimento guarda "+fmt(R.cmin)+" L de consumo e não atende "+fmt(I.tManut,1)+" h de consumo no horário de pico ("+fmt(R.rManut)+" L). Aumente a área do menor compartimento (6.5.6.5)"]);
   /* 6.5.6.7: inferior com compartimento único só se o consumo durante a manutenção for menor que o consumo guardado no superior */
   R.infUnicoOk=R.rManut<R.cSup;
-  R.camChkI=R.gI.V<=0?["bad","Informe o comprimento, a largura e a altura útil dos compartimentos"]:R.nCI>1?["ok",R.nCI+" compartimentos no inferior"]:
+  R.camChkI=R.gI.A<=0?["bad","Informe o comprimento e a largura dos compartimentos"]:R.nCI>1?["ok",R.nCI+" compartimentos no inferior"]:
     (R.infUnicoOk?["ok","Compartimento único permitido: o consumo durante a manutenção ("+fmt(R.rManut)+" L) é menor que o volume de consumo do superior ("+fmt(R.cSup)+" L), item 6.5.6.7"]:
     ["bad","Compartimento único não permitido: o consumo durante a manutenção ("+fmt(R.rManut)+" L) não é menor que o volume de consumo do superior ("+fmt(R.cSup)+" L), item 6.5.6.7"]);
   /* Diâmetros: o valor calculado é o padrão; o usuário pode adotar outro (I.dMan), e o app verifica se atende ao critério */
@@ -911,7 +910,7 @@ function geoIn(k){
      r.comp.map((c,ci)=>{const nm=r.comp.length>1?"Compartimento "+(ri+1)+"."+(ci+1):"Reservatório "+(ri+1),
        fi=(gn,v,lb)=>{const id="g_"+k+ri+"_"+ci+"_"+gn;return '<div class="f"><label for="'+id+'">'+lb+'</label><input type="number" id="'+id+'" step="0.05" min="0" data-geo="'+k+'" data-gn="'+gn+'" data-r="'+ri+'" data-c="'+ci+'" value="'+v+'"><span class="u">m</span></div>'};
        return '<div class="geo-c"><div class="geo-h">'+nm+(ri===0&&ci===0&&G.reduce((a,x)=>a+x.comp.length,0)>1?' <small>(menor)</small>':'')+'</div>'+
-        fi("c",c.c,"Comprimento")+fi("l",c.l,"Largura")+fi("hu",c.hu,"Altura útil (do fundo à lâmina d'água)")+fi("ht",c.ht,"Altura total (do fundo à base da tampa)")+'</div>'}).join("")+
+        fi("c",c.c,"Comprimento")+fi("l",c.l,"Largura")+fi("ht",c.ht,"Altura total (do fundo à base da tampa)")+'</div>'}).join("")+
      '</div>'});
   return h;
 }
@@ -929,7 +928,7 @@ function buildDim(){
    '</div><div class="card" id="resA"></div></div>'+
 
   '<div class="sec-title"><span class="tag">B</span><h2>Reservatório superior</h2></div><div class="grid2">'+
-   '<div class="card"><h3>Dados do superior</h3>'+note("Informe o número de reservatórios e de compartimentos. Na primeira linha, o compartimento menor; nas demais, os outros compartimentos, com os mesmos dados. Altura útil: do fundo à lâmina d'água. Altura total: do fundo à base da tampa. O superior deve ter no mínimo 2 compartimentos (6.5.6.5).")+
+   '<div class="card"><h3>Dados do superior</h3>'+note("Informe o número de reservatórios e de compartimentos. Primeiro o compartimento menor; depois os outros compartimentos, com os mesmos dados. A altura útil (do fundo à lâmina d'água) é calculada pelo volume necessário. O superior deve ter no mínimo 2 compartimentos (6.5.6.5).")+
     geoIn("geoSup")+
    '</div><div class="card" id="resSup"></div></div>'+
    '<div class="grid2" style="margin-top:20px">'+
@@ -939,7 +938,7 @@ function buildDim(){
     '</tbody></table></div></div><div class="card" id="resSai"></div></div>'+
 
   '<div class="sec-title"><span class="tag">C</span><h2>Reservatório inferior</h2></div><div class="grid2">'+
-   '<div class="card"><h3>Dados do inferior</h3>'+note("Informe o número de reservatórios e de compartimentos. Na primeira linha, o compartimento menor; nas demais, os outros compartimentos, com os mesmos dados. Altura útil: do fundo à lâmina d'água. Altura total: do fundo à base da tampa.")+
+   '<div class="card"><h3>Dados do inferior</h3>'+note("Informe o número de reservatórios e de compartimentos. Primeiro o compartimento menor; depois os outros compartimentos, com os mesmos dados. A altura útil (do fundo à lâmina d'água) é calculada pelo volume necessário.")+
     geoIn("geoInf")+
     h3("Entrada pelo alimentador predial")+note("A vazão é calculada pela pressão de trabalho mínima, pelo diâmetro e pela perda de carga até a entrada do reservatório. A pressão máxima verifica a pressão estática na torneira de boia.")+
     '<div class="f"><label for="selAl">Diâmetro do alimentador</label><select id="selAl" data-man="al"></select><span class="u"></span></div>'+
@@ -960,10 +959,9 @@ function buildDim(){
    '<div class="card"><p class="sub" style="margin-top:0">Cada diâmetro vem preenchido com o valor calculado. Para adotar outro, escolha na lista. A velocidade é sempre calculada. O app avisa quando algo não atende ao critério.</p><div id="tubAlert"></div><div id="tubos"></div></div>'+
   '<p class="foot-ref">Os diâmetros estão em DN (diâmetro nominal) de tubo de PVC soldável. As fórmulas e as referências de cada cálculo estão na aba Memorial. São diâmetros de pré-dimensionamento; o projeto executivo exige verificação completa de pressões e perdas de carga.</p>';
 }
-const camT=g=>'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Compartimento</th><th class="n">C × L (m)</th><th class="n">Altura útil (m)</th><th class="n">Altura total (m)</th><th class="n">Volume (L)</th></tr></thead><tbody>'+
-  g.list.map((c,i)=>'<tr><td>'+(c.nc>1?c.r+"."+c.k:"Reserv. "+c.r)+(g.n>1&&i===g.iMin?' <small style="color:var(--ink-soft)">(menor)</small>':'')+'</td><td class="n">'+fmt(c.c,2)+" × "+fmt(c.l,2)+'</td><td class="n">'+fmt(c.hu,2)+'</td><td class="n">'+fmt(c.ht,2)+'</td><td class="n">'+fmt(c.v)+'</td></tr>').join("")+'</tbody></table></div>'+
-  (g.htBad.length?pillRow("bad","Altura total menor que a altura útil em "+g.htBad.map(c=>c.nc>1?c.r+"."+c.k:"reserv. "+c.r).join(", ")):"");
-const volChk=(ad,nec)=>pillRow(ad+0.5>=nec?"ok":"bad",ad+0.5>=nec?"O volume adotado atende ao volume necessário":"O volume adotado é menor que o necessário. Faltam "+fmt(nec-ad)+" L");
+const camT=g=>g.list.map((c,i)=>'<div class="geo-c"><div class="geo-h">'+(c.nc>1?"Compartimento "+c.r+"."+c.k:"Reservatório "+c.r)+(g.n>1&&i===g.iMin?' <small>(menor)</small>':'')+'</div>'+
+  Rr("Comprimento",fmt(c.c,2),"m")+Rr("Largura",fmt(c.l,2),"m")+Rr("Altura útil (calculada)",fmt(c.hu,2),"m")+Rr("Altura total",fmt(c.ht,2),"m")+Rr("Volume",fmt(c.v),"L")+
+  (c.ht<c.hu-1e-9?pillRow("bad","A altura total é menor que a altura útil calculada"):"")+'</div>').join("");
 /* gráfico das curvas: conjunto motobomba × sistema, com o ponto de operação */
 function curvas(R){
   if(!(R.qn>0)||!(R.qz>0))return note("Informe a vazão e a altura manométrica da bomba para traçar as curvas.");
@@ -1005,17 +1003,17 @@ function renderDimResults(){
    (R.diasFora?pillRow("bad","Dias de reservação fora do intervalo de 1 a 3 dias (itens 6.5.6.2 e 6.5.6.3). O cálculo usa "+fmt(R.dias,1)+" dia(s)"):pillRow("ok","Entre 24 h (6.5.6.2) e 3 dias de consumo (6.5.6.3)"));
   document.getElementById("resSup").innerHTML='<h3>Resultados do superior</h3>'+
    sub3("Volume")+Rr("Consumo ("+fmt(I.pctSup,0)+"% da reserva de consumo)",fmt(R.cSupPct),"L")+(R.supAum?Rr("Consumo ajustado para a manutenção (6.5.6.5)",fmt(R.cSup),"L"):"")+Rr("Reserva de incêndio",fmt(R.rInc),"L")+
-   Rr("Volume necessário",fmt(R.vSup),"L")+
+   Rr("Volume do superior",fmt(R.vSup),"L")+
    (R.supAum?pillRow("warn","A parcela do superior foi aumentada para que o menor compartimento atenda ao consumo no horário de pico durante a manutenção. O inferior foi reduzido na mesma medida"):"")+
-   sub3("Compartimentos e dimensões")+camT(R.gS)+Rr("Volume adotado",fmt(R.vSupAd),"L")+volChk(R.vSupAd,R.vSup)+Rr("Volume do menor compartimento",fmt(R.vminS),"L")+pillRow(R.camChk[0],R.camChk[1])+
+   sub3("Compartimentos e dimensões")+camT(R.gS)+Rr("Volume do menor compartimento",fmt(R.vminS),"L")+pillRow(R.camChk[0],R.camChk[1])+
    '';
   document.getElementById("resSai").innerHTML='<h3>Resultados da saída</h3>'+Rr("Soma dos pesos por apartamento",fmt(R.pu,1),"ΣP")+Rr("Apartamentos abastecidos",fmt(R.nun))+Rr("Soma dos pesos total",fmt(R.pt,1),"ΣP")+
    Rr("Vazão de projeto (Q = 0,3·√ΣP)",fmt(R.qs,2),"L/s")+Rr("Saída de cada reservatório e barrilete",dn(R.dsai))+Rr("Velocidade",fmt(R.vsai,2),"m/s")+
    pillRow(R.vsai<=VMAX+1e-9?"ok":"bad",R.vsai<=VMAX+1e-9?"Velocidade dentro do limite de 3 m/s":"Acima de 3 m/s")+((+I.qtd[1]||0)>0&&R.pu>0?pillRow("warn","A válvula de descarga tem peso 32 e responde por "+fmt((+I.qtd[1])*32/R.pu*100,0)+"% da soma dos pesos. Confirme se o prédio usa válvula"):"")+
    '<p class="foot-ref">A saída de cada compartimento do superior é dimensionada para a vazão total, porque durante a manutenção um compartimento abastece sozinho o edifício.</p>';
   document.getElementById("resInf").innerHTML='<h3>Resultados do inferior</h3>'+
-   sub3("Volume")+Rr("Consumo restante da reserva",fmt(R.cInf),"L")+Rr("Volume necessário",fmt(R.vInf),"L")+
-   sub3("Compartimentos e dimensões")+camT(R.gI)+Rr("Volume adotado",fmt(R.vInfAd),"L")+volChk(R.vInfAd,R.vInf)+pillRow(R.camChkI[0],R.camChkI[1])+
+   sub3("Volume")+Rr("Consumo restante da reserva",fmt(R.cInf),"L")+Rr("Volume do inferior",fmt(R.vInf),"L")+
+   sub3("Compartimentos e dimensões")+camT(R.gI)+pillRow(R.camChkI[0],R.camChkI[1])+
    sub3("Entrada pelo alimentador predial")+Rr("Carga disponível (pressão mínima)",fmt(R.al.Hb,2),"mca")+Rr("Vazão do alimentador "+dn(R.dal),fmt(R.qal,2),"L/s")+
    Rr("Velocidade com a pressão mínima",fmt(R.valim,2),"m/s")+Rr("Velocidade com a pressão máxima",fmt(R.vAlMax,2),"m/s")+(R.vAlMax>VMAX+1e-9?pillRow("warn","Com a pressão máxima, a velocidade passa de 3 m/s: prever registro de regulagem ou válvula redutora de pressão"):"")+Rr("Perda distribuída no tubo ("+fmt(R.al.L,0)+" m)",fmt(R.al.hfD,2),"mca")+Rr("Perda localizada nas conexões ("+fmt(R.al.Leq,1)+" m equivalentes)",fmt(R.al.hfL,2),"mca")+
    Rr("Pressão disponível na saída do alimentador",fmt(R.al.pRes,2),"mca")+Rr("Perda na torneira de boia de alta vazão ("+R.al.nB+" boia(s), "+fmt(R.al.q*60/R.al.nB,0)+" L/min cada)",fmt(R.al.pBoia,2),"mca")+
@@ -1152,9 +1150,9 @@ function calcMemo(){
    ["Velocidade máxima","v = Q ÷ A ≤ 3 m/s, com A pela área interna do tubo.","Verificada em todas as tubulações com vazão",["tigre|p. 33","nbr5648"]]]},
   {g:"Reservatório superior",rows:[
    ["Parcela de consumo","Cs = "+fmt(I.pctSup,0)+"% × Rc (usual: 40% no superior e 60% no inferior)","Cs = "+fmt(R.cSupPct)+" L"+(R.supAum?", ajustada para "+fmt(R.cSup)+" L":""),["tigre|p. 60"]],
-   ["Menor compartimento (6.5.6.5)","O menor compartimento deve atender ao consumo no horário de pico durante a manutenção. Consumo guardado no menor = Vmín × (1 − RTI ÷ Vadotado) ≥ Rm","Cmín = "+fmt(R.vminS)+" × (1 − "+fmt(R.rInc)+" ÷ "+fmt(R.vSupAd)+") = "+fmt(R.cmin)+" L "+(R.cmin+0.5>=R.rManut?"≥":"<")+" "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5"]],
-   ["Volume necessário do superior","Vs = Cs + RTI","Vs = "+fmt(R.cSup)+" + "+fmt(R.rInc)+" ≈ "+fmt(R.vSup)+" L",["nbr2020|item 6.5.6.2"]],
-   ["Volume adotado","Volume útil de cada compartimento = comprimento × largura × altura útil (do fundo à lâmina d'água); volume adotado = soma dos compartimentos ≥ volume necessário","Vadotado = "+R.gS.list.map(c=>fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)).join(" + ")+" = "+fmt(R.vSupAd)+" L "+(R.supVolOk?"≥":"<")+" "+fmt(R.vSup)+" L",[]],
+   ["Menor compartimento (6.5.6.5)","O menor compartimento deve atender ao consumo no horário de pico durante a manutenção. Com a mesma lâmina em todos: Cs × (Amín ÷ Atotal) ≥ Rm","Cmín = "+fmt(R.cSup)+" × "+fmt(R.gS.amin,2)+" ÷ "+fmt(R.gS.A,2)+" = "+fmt(R.cmin)+" L "+(R.cmin+0.5>=R.rManut?"≥":"<")+" "+fmt(R.rManut)+" L",["nbr2020|item 6.5.6.5"]],
+   ["Volume do superior","Vs = Cs + RTI, calculado automaticamente","Vs = "+fmt(R.cSup)+" + "+fmt(R.rInc)+" ≈ "+fmt(R.vSup)+" L",["nbr2020|item 6.5.6.2"]],
+   ["Altura útil","Área de cada compartimento = comprimento × largura; altura útil h = Vs ÷ soma das áreas (mesma lâmina em todos); volume de cada compartimento = área × h; altura total informada ≥ h","h = "+fmt(R.vSup/1000,2)+" m³ ÷ "+fmt(R.gS.A,2)+" m² = "+fmt(R.gS.h,2)+" m",[]],
    ["Diâmetro do recalque","Diâmetro econômico (Forchheimer): D = 1,3 · √Q · X^0,25, com Q = vazão do conjunto motobomba (m³/s) e X = horas de funcionamento por dia (CD ÷ Q) ÷ 24","Com a vazão do conjunto: D = 1,3 × √"+fmt(R.qrec/1000,5)+" × ("+fmt(R.hRec,1)+"/24)^0,25 = "+fmt(R.drt,1)+" mm, "+dn(R.drecCalc)+man("rec",R.drec)+" (v = "+fmt(R.vrec,2)+" m/s)",["tigre|p. 63"]],
    ["Extravasor","Bitola comercial imediatamente superior à da entrada de água",dn(R.dexsCalc)+", uma acima do recalque "+dn(R.drec)+man("exs",R.dexs),["cj2023|p. 41"]],
    ["Limpeza","Igual ou maior que a tubulação de entrada, e não menor que 32 mm, para o lodo do fundo não obstruir a tubulação",dn(R.dlsCalc)+man("lims",R.dls),["tigre|p. 74","cj2023|p. 41"]],
@@ -1166,8 +1164,8 @@ function calcMemo(){
    ["Reposição pelo recalque (6.7.2)","t = CD ÷ (Qef × 3600) ≤ 6 h","t = "+fmt(R.cd)+" ÷ ("+fmt(R.qef,2)+" × 3600) = "+(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h",["nbr2020|item 6.7.2"]],
   ]},
   {g:"Reservatório inferior",rows:[
-   ["Volume necessário do inferior","Vi = Rc − Cs","Vi = "+fmt(R.rCons)+" − "+fmt(R.cSup)+" ≈ "+fmt(R.vInf)+" L",["nbr2020|item 6.5.6.2"]],
-   ["Volume adotado","Volume útil de cada compartimento = comprimento × largura × altura útil; volume adotado = soma dos compartimentos ≥ volume necessário","Vadotado = "+R.gI.list.map(c=>fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)).join(" + ")+" = "+fmt(R.vInfAd)+" L "+(R.infVolOk?"≥":"<")+" "+fmt(R.vInf)+" L",[]],
+   ["Volume do inferior","Vi = Rc − Cs, calculado automaticamente","Vi = "+fmt(R.rCons)+" − "+fmt(R.cSup)+" ≈ "+fmt(R.vInf)+" L",["nbr2020|item 6.5.6.2"]],
+   ["Altura útil","h = Vi ÷ soma das áreas dos compartimentos; altura total informada ≥ h","h = "+fmt(R.vInf/1000,2)+" m³ ÷ "+fmt(R.gI.A,2)+" m² = "+fmt(R.gI.h,2)+" m",[]],
    ["Compartimento único (6.5.6.7)","Permitido só se Rm < Cs (consumo durante a manutenção menor que o consumo guardado no superior)",fmt(R.rManut)+" L "+(R.infUnicoOk?"<":"≥")+" "+fmt(R.cSup)+" L: "+(R.infUnicoOk?"permitido":"não permitido"),["nbr2020|item 6.5.6.7"]],
    ["Carga disponível no alimentador","Hd = pressão de trabalho mínima na entrada do reservatório","Hd = "+fmt(R.al.Hb,2)+" mca",[]],
    ["Velocidade com a pressão máxima","Mesmo cálculo da vazão com a pressão de trabalho máxima; a velocidade deve ficar até 3 m/s","v = "+fmt(R.vAlMax,2)+" m/s com "+fmt(+I.pMax||0,1)+" mca",["tigre|p. 33"]],
@@ -1235,9 +1233,9 @@ function reportHTML(){
 function dimRows(R){const I=S.inp;return {
  geral:[["Tipo de edificação",esc(I.tipo)],["Quantidade total",fmt(R.qt)+" "+plural(R.unidade)+" ("+I.qAndar+" por andar em "+I.andares+" andares)"],["Consumo diário",fmt(R.cd)+" L/dia"],
   ["Reserva de consumo",fmt(R.rCons)+" L ("+fmt(R.dias,1)+" dia(s))"],["Reserva de manutenção",fmt(R.rManut)+" L ("+fmt(I.tManut,1)+" h)"],["Reserva técnica de incêndio",fmt(R.rInc)+" L ("+fmt(I.pctInc,0)+"% do consumo diário)"],["Volume total reservado",fmt(R.vTot)+" L"]],
- sup:[["Volume",fmt(R.vSup)+" L ("+R.nS+" reservatório(s), "+R.nCS+" compartimento(s))"],["Compartimentos (C × L × altura útil / altura total)",R.gS.list.map(c=>(c.nc>1?c.r+"."+c.k:"R"+c.r)+": "+fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)+" / "+fmt(c.ht,2)+" m").join("; ")],["Volume adotado",fmt(R.gS.V)+" L"],
+ sup:[["Volume",fmt(R.vSup)+" L ("+R.nS+" reservatório(s), "+R.nCS+" compartimento(s))"],["Compartimentos (C × L × altura útil calculada / altura total)",R.gS.list.map(c=>(c.nc>1?c.r+"."+c.k:"R"+c.r)+": "+fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)+" / "+fmt(c.ht,2)+" m").join("; ")],
   ["Vazão do conjunto motobomba (entrada)",fmt(R.qch,2)+" m³/h"],["Vazão efetiva ao final do recalque",fmt(R.qefh,2)+" m³/h"],["Vazão da saída",fmt(R.qs,2)+" L/s (ΣP = "+fmt(R.pt,1)+")"]],
- inf:[["Volume",fmt(R.vInf)+" L ("+R.nI+" reservatório(s), "+R.nCI+" compartimento(s))"],["Compartimentos (C × L × altura útil / altura total)",R.gI.list.map(c=>(c.nc>1?c.r+"."+c.k:"R"+c.r)+": "+fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)+" / "+fmt(c.ht,2)+" m").join("; ")],["Volume adotado",fmt(R.gI.V)+" L"],
+ inf:[["Volume",fmt(R.vInf)+" L ("+R.nI+" reservatório(s), "+R.nCI+" compartimento(s))"],["Compartimentos (C × L × altura útil calculada / altura total)",R.gI.list.map(c=>(c.nc>1?c.r+"."+c.k:"R"+c.r)+": "+fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)+" / "+fmt(c.ht,2)+" m").join("; ")],
   ["Alimentador predial",dn(R.dal)+", "+fmt(R.qal,2)+" L/s, reposição em "+(isFinite(R.tRepReal)?fmt(R.tRepReal,1):"—")+" h"+(R.al.ok?"":" (não atende ao item 6.7.2)")]]
 }}
 function renderReport(){document.getElementById("report").innerHTML=reportHTML();const n=missing().length;

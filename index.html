@@ -1190,10 +1190,10 @@ function reportHTML(){
   h+=complete?'<div class="verdict ok">Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens 6.5.1 a 6.5.10.</div>'
    :'<div class="verdict warn">Relatório incompleto. A inspeção ainda não foi concluída. Superior com '+okCount("sup")+' de '+nBal("sup")+' pontos e inferior com '+okCount("inf")+' de '+nBal("inf")+' pontos em conformidade. Falta concluir<ul>'+miss.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul></div>';
   const DR=dimRows(R),rowsT=a=>'<table><tbody>'+a.map(r=>'<tr><td style="width:42%;color:var(--ink-soft)">'+r[0]+'</td><td><b>'+r[1]+'</b></td></tr>').join("")+'</tbody></table>';
-  const tubR=a=>'<div class="tbl-wrap"><table><thead><tr><th>Tubulação</th><th>Registro ou válvula</th><th>Diâmetro</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+x.n+'</td><td>'+x.reg+'</td><td style="white-space:nowrap">'+dn(x.de)+'</td></tr>').join("")+'</tbody></table></div>';
+  const tubR=a=>'<div class="tbl-wrap"><table><thead><tr><th>Tubulação</th><th>Diâmetro</th><th>Vazão</th><th>Velocidade</th><th>Registro ou válvula</th><th>Situação</th></tr></thead><tbody>'+a.map(x=>'<tr><td>'+x.n+'</td><td style="white-space:nowrap">'+dn(x.de)+'</td><td style="white-space:nowrap">'+(x.q!=null?fmt(x.q,2)+' L/s':'—')+'</td><td style="white-space:nowrap">'+(x.v!=null?fmt(x.v,2)+' m/s':'—')+'</td><td>'+x.reg+'</td><td>'+esc(x.chk[1])+'</td></tr>').join("")+'</tbody></table></div>';
   h+='<h2>1. Edificação</h2>'+rowsT(DR.geral);
   ["sup","inf"].forEach((r,k)=>{
-    h+='<h2>'+(2+k)+'. '+RESC[r]+'</h2><h3>Dimensionamento</h3>'+rowsT(DR[r])+'<h3>Tubulações e registros</h3>'+tubR(R.tubos.filter(x=>x.r===r));
+    h+='<h2>'+(2+k)+'. '+RESC[r]+'</h2><h3>Dimensionamento</h3>'+rowsT(DR[r])+'<h3>Tubulações, diâmetros e registros</h3>'+tubR(R.tubos.filter(x=>x.r===r))+(r==="inf"?'<h3>Conjunto motobomba</h3>'+rowsT(DR.mb):'');
     h+='<h3>Checklist</h3><div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Verificação</th><th>Resposta</th><th>Situação</th></tr></thead><tbody>';
     balList(r).forEach(B=>{
       h+='<tr><td colspan="4" style="background:var(--panel-2);font-weight:700">Balão '+B.n+', '+esc(bNome(B,r))+(vis(B.n,r)==="ok"?' <span class="c">(concluído)</span>':'')+'</td></tr>';
@@ -1209,13 +1209,31 @@ function reportHTML(){
    '<div class="refs"><p>Referências: ver a aba Memorial. Os diâmetros são pré-dimensionamento pela vazão e o projeto executivo requer verificação de pressões e perdas de carga.</p></div>';
   return h;
 }
-function dimRows(R){const I=S.inp;return {
+function dimRows(R){const I=S.inp,ok=b=>b?"atende":"não atende",
+ comp=g=>g.list.map((c,i)=>[(c.nc>1?"Compartimento "+c.r+"."+c.k:"Reservatório "+c.r)+(g.n>1&&i===g.iMin?" (menor)":""),fmt(c.c,2)+" × "+fmt(c.l,2)+" m; altura útil "+fmt(c.hu,2)+" m; altura total "+fmt(c.ht,2)+" m; "+fmt(c.v)+" L"+(c.ht<c.hu-1e-9?" (altura total menor que a útil)":"")]),
+ AS={unica:"Bomba única",paralelo:R.nb+" bombas iguais em paralelo",serie:R.nb+" bombas iguais em série"}[R.assoc];
+ return {
  geral:[["Tipo de edificação",esc(I.tipo)],["Quantidade total",fmt(R.qt)+" "+plural(R.unidade)+" ("+I.qAndar+" por andar em "+I.andares+" andares)"],["Consumo diário",fmt(R.cd)+" L/dia"],
-  ["Reserva de consumo",fmt(R.rCons)+" L ("+fmt(R.dias,1)+" dia(s))"],["Reserva de manutenção",fmt(R.rManut)+" L ("+fmt(I.tManut,1)+" h)"],["Reserva técnica de incêndio",fmt(R.rInc)+" L ("+fmt(I.pctInc,0)+"% do consumo diário)"],["Volume total reservado",fmt(R.vTot)+" L"]],
- sup:[["Volume",fmt(R.vSup)+" L ("+R.nS+" reservatório(s), "+R.nCS+" compartimento(s))"],["Compartimentos (C × L × altura útil calculada / altura total)",R.gS.list.map(c=>(c.nc>1?c.r+"."+c.k:"R"+c.r)+": "+fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)+" / "+fmt(c.ht,2)+" m").join("; ")],
-  ["Vazão do conjunto motobomba (entrada)",fmt(R.qch,2)+" m³/h"],["Vazão efetiva ao final do recalque",fmt(R.qefh,2)+" m³/h"],["Vazão da saída",fmt(R.qs,2)+" L/s (ΣP = "+fmt(R.pt,1)+")"]],
- inf:[["Volume",fmt(R.vInf)+" L ("+R.nI+" reservatório(s), "+R.nCI+" compartimento(s))"],["Compartimentos (C × L × altura útil calculada / altura total)",R.gI.list.map(c=>(c.nc>1?c.r+"."+c.k:"R"+c.r)+": "+fmt(c.c,2)+" × "+fmt(c.l,2)+" × "+fmt(c.hu,2)+" / "+fmt(c.ht,2)+" m").join("; ")],
-  ["Alimentador predial",dn(R.dal)+", "+fmt(R.qal,2)+" L/s, reposição em "+(isFinite(R.tRepReal)?fmt(R.tRepReal,1):"—")+" h"+(R.al.ok?"":" (não atende ao item 6.7.2)")]]
+  ["Reserva de consumo",fmt(R.rCons)+" L ("+fmt(R.dias,1)+" dia(s))"],["Reserva de manutenção",fmt(R.rManut)+" L ("+fmt(I.tManut,1)+" h)"],["Reserva técnica de incêndio",fmt(R.rInc)+" L ("+fmt(I.pctInc,0)+"% do consumo diário)"],
+  ["Volume total reservado",fmt(R.vTot)+" L"],["Armazenamento sem incêndio",fmt(R.diasArm,1)+" dias"]],
+ sup:[["Consumo no superior",fmt(R.cSup)+" L"+(R.supAum?" (ajustado de "+fmt(R.cSupPct)+" L para atender à manutenção)":" ("+fmt(I.pctSup,0)+"% da reserva de consumo)")],["Reserva de incêndio",fmt(R.rInc)+" L"],
+  ["Volume do superior",fmt(R.vSup)+" L ("+R.nS+" reservatório(s), "+R.nCS+" compartimento(s))"]].concat(comp(R.gS),[
+  ["Menor compartimento (6.5.6.5)",fmt(R.cmin)+" L de consumo para "+fmt(R.rManut)+" L em "+fmt(I.tManut,1)+" h de manutenção: "+ok(R.cmin+0.5>=R.rManut)],
+  ["Saída e barrilete",dn(R.dsai)+"; ΣP = "+fmt(R.pt,1)+"; Q = "+fmt(R.qs,2)+" L/s; v = "+fmt(R.vsai,2)+" m/s ("+(R.vsai<=VMAX+1e-9?"até 3 m/s":"acima de 3 m/s")+")"],
+  ["Entrada pelo recalque","Ver o conjunto motobomba"]]),
+ inf:[["Consumo no inferior",fmt(R.cInf)+" L"],["Volume do inferior",fmt(R.vInf)+" L ("+R.nI+" reservatório(s), "+R.nCI+" compartimento(s))"]].concat(comp(R.gI),[
+  ["Compartimentação",R.camChkI[1]],
+  ["Alimentador predial",dn(R.dal)+(+R.dMan.al?" (adotado; calculado "+dn(R.dalCalc)+")":"")+"; pressão média de trabalho "+fmt(R.al.Hb,1)+" mca"],
+  ["Vazão e velocidade do alimentador",fmt(R.qal,2)+" L/s; v = "+fmt(R.valim,2)+" m/s ("+(R.valim<=VMAX+1e-9?"até 3 m/s":"acima de 3 m/s")+")"],
+  ["Perdas de carga no alimentador","tubo "+fmt(R.al.hfD,2)+" mca ("+fmt(R.al.L,0)+" m); conexões "+fmt(R.al.hfL,2)+" mca ("+fmt(R.al.Leq,1)+" m equivalentes); torneira de boia "+fmt(R.al.pBoia,2)+" mca ("+R.al.nB+" boia(s), "+fmt(R.al.q*60/R.al.nB,0)+" L/min cada)"],
+  ["Reposição pelo alimentador (6.7.2)",(isFinite(R.tRepReal)?fmt(R.tRepReal,1):"—")+" h: "+ok(R.al.ok)]]),
+ mb:[["Ligação",AS],["Dados de cada bomba",fmt(R.pot,0)+" W; "+fmt(R.qnh,2)+" m³/h; "+fmt(R.hn,1)+" mca; altura máxima (shut-off) "+fmt(R.h0,1)+" mca"+(R.h0Est?" (estimada)":"")],
+  ["Conjunto",fmt(R.qch,2)+" m³/h a "+fmt(R.hc,1)+" mca; potência instalada "+fmt(R.potTot,0)+" W"],
+  ["Sistema de recalque",dn(R.drec)+"; tubo "+fmt(R.lRec,0)+" m + "+fmt(R.leqRec,1)+" m equivalentes; desnível geométrico "+fmt(R.hg,1)+" m"],
+  ["Vazão efetiva na saída do recalque",fmt(R.qef,2)+" L/s ("+fmt(R.qefh,2)+" m³/h)"],["Pressão efetiva",fmt(R.hop,2)+" mca ("+fmt(R.hop*9.81,0)+" kPa)"],
+  ["Velocidade na saída do recalque",fmt(R.vef,2)+" m/s ("+(R.vef<=VMAX+1e-9?"até 3 m/s":"acima de 3 m/s")+")"],
+  ["Potência hidráulica",fmt(R.phid,0)+" W"+(R.eta!=null?"; rendimento resultante "+fmt(R.eta*100,0)+"%":"")],
+  ["Reposição pelo recalque (6.7.2)",(isFinite(R.tRepRec)?fmt(R.tRepRec,1):"—")+" h, mínimo de "+fmt(R.qreqh,2)+" m³/h: "+ok(R.recOk)]]
 }}
 function renderReport(){document.getElementById("report").innerHTML=reportHTML();const n=missing().length;
   document.getElementById("repNote").textContent=n?"A inspeção tem "+n+" ponto(s) pendente(s). O PDF sairá marcado como incompleto.":"Inspeção completa nos dois reservatórios."}
@@ -1256,7 +1274,7 @@ function reportPDF(){
   ["sup","inf"].forEach((r,k)=>{
     head2(doc,(2+k)+". "+RESC[r]);
     para(doc,"Dimensionamento",{bold:true,size:10.5,color:[29,63,79],after:1});table(doc,null,DR[r].map(x=>[strip(x[0]),strip(x[1])]),{columnStyles:{0:{cellWidth:60,fontStyle:"bold"}}});
-    para(doc,"Tubulações e registros",{bold:true,size:10.5,color:[29,63,79],after:1});table(doc,["Tubulação","Registro ou válvula","Dimensão"],R.tubos.filter(x=>x.r===r).map(x=>[x.n,x.reg,dn(x.de)]),{columnStyles:{0:{cellWidth:36},2:{cellWidth:42}}});
+    para(doc,"Tubulações, diâmetros e registros",{bold:true,size:10.5,color:[29,63,79],after:1});table(doc,["Tubulação","Diâmetro","Vazão","Velocidade","Registro ou válvula","Situação"],R.tubos.filter(x=>x.r===r).map(x=>[x.n,dn(x.de),x.q!=null?fmt(x.q,2)+" L/s":"—",x.v!=null?fmt(x.v,2)+" m/s":"—",x.reg,x.chk[1]]),{columnStyles:{0:{cellWidth:28},1:{cellWidth:18},2:{cellWidth:18},3:{cellWidth:20}}});if(r==="inf"){para(doc,"Conjunto motobomba",{bold:true,size:10.5,color:[29,63,79],after:1});table(doc,null,DR.mb.map(x=>[strip(x[0]),strip(x[1])]),{columnStyles:{0:{cellWidth:60,fontStyle:"bold"}}})}
     para(doc,"Checklist",{bold:true,size:10.5,color:[29,63,79],after:1});
     const body=[];
     balList(r).forEach(B=>{body.push([{content:"Balão "+B.n+", "+bNome(B,r)+(vis(B.n,r)==="ok"?" (concluído)":""),colSpan:4,styles:{fillColor:[241,245,246],fontStyle:"bold"}}]);

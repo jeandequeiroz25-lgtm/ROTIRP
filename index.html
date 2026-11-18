@@ -1229,7 +1229,7 @@ function reportHTML(){
       h+='<tr><td>6.5.6.1</td><td colspan="3">Interrupções registradas: '+fmt(it.freq||0,1)+' por mês, duração média de '+fmt(it.dmed||0,1)+' h e maior duração de '+fmt(it.dmax||0,1)+' h'+(it.fonte?" (fonte: "+esc(it.fonte)+")":"")+'. Autonomia adotada de '+fmt(R.autH,0)+' h.</td></tr>';
     h+='</tbody></table></div>';
   });
-  h+='<div class="sign"><div>'+esc(P.resp||"Responsável técnico")+'<br>CREA ou CAU '+esc(P.registro||"")+'</div><div>'+esc(P.cliente||"Cliente")+'</div></div>'+
+  h+='<div class="sign"><div>Jean de Queiroz Macedo<br>Aluno IFCE - mat. 20232015050122</div><div>Técnico Responsável</div></div>'+
    '<div class="refs"><p>Referências: ver a aba Memorial. Os diâmetros são pré-dimensionamento pela vazão e o projeto executivo requer verificação de pressões e perdas de carga.</p></div>';
   return h;
 }
@@ -1291,7 +1291,7 @@ function reportPDF(){
     table(doc,["Item","Verificação","Resposta","Situação"],body,{columnStyles:{0:{cellWidth:20},2:{cellWidth:26},3:{cellWidth:26}}});
   });
   if(doc.__y>255){doc.addPage();doc.__y=30}doc.__y+=18;doc.setDrawColor(27,43,50);doc.line(20,doc.__y,95,doc.__y);doc.line(115,doc.__y,190,doc.__y);
-  doc.setFontSize(9);doc.setTextColor(27,43,50);doc.text(pdfTxt(P.resp||"Responsável técnico"),57.5,doc.__y+5,{align:"center"});doc.text(pdfTxt(P.cliente||"Cliente"),152.5,doc.__y+5,{align:"center"});
+  doc.setFontSize(9);doc.setTextColor(27,43,50);doc.text(pdfTxt("Jean de Queiroz Macedo"),57.5,doc.__y+5,{align:"center"});doc.text(pdfTxt("Aluno IFCE - mat. 20232015050122"),57.5,doc.__y+9.5,{align:"center"});doc.text(pdfTxt("Técnico Responsável"),152.5,doc.__y+5,{align:"center"});doc.__y+=5;
   footer(doc);return {doc,name:"relatorio-"+(miss.length?"incompleto-":"")+slug(P.nome)+".pdf"};
 }
 function memoPDF(){

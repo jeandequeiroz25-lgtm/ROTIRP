@@ -310,7 +310,7 @@ input.vel{width:78px;text-align:right}
 .paper.gray .g-chk .g-grp td{background:#d6d6d6;font-weight:700;color:#111}.paper.gray .g-chk .g-grp small{font-weight:500;color:#444}
 .paper.gray .g-chk tbody tr:nth-child(even):not(.g-grp){background:#f6f6f6}
 .paper.gray .g-mute{color:#777;font-size:12.5px}
-.g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}.uq-bar{margin:14px 0 6px;padding:8px 16px}.pill,.pill.ok,.pill.bad,.pill.warn{background:none;padding:0;border-radius:0;display:inline;color:#ef4444}.pill.ok{color:#22b55a}.paper.gray .g-intro{font-size:13.5px;color:#4a4a4a;margin:0 0 8px}.paper.gray .g-crit td{font-size:13px;line-height:1.45}.uq-bar .f{border:0;margin:0}
+.g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}.uq-bar{margin:14px 0 6px;padding:8px 16px}.pill,.pill.ok,.pill.bad,.pill.warn{background:none;padding:0;border-radius:0;display:inline;color:#ef4444}.pill.ok{color:#22b55a}.paper.gray .g-chk tr.g-obs td{color:#1d4ed8;font-style:italic;font-size:13px;line-height:1.45;background:#fff}.uq-bar .f{border:0;margin:0}
 </style>
 
 <header class="top">
@@ -1360,6 +1360,9 @@ const CRITICA=[
 ];
 /* ============ RELATÓRIO DE CONFORMIDADE (escala de cinza) ============ */
 const stCls={c:"g-ok",nc:"g-bad",pend:"g-warn"};
+/* observações da análise crítica (TCC) por item da norma: aparecem uma vez por reservatório, na primeira pergunta do item */
+const critTxt=c=>"Análise crítica (TCC): "+c[2]+" Proposta: "+c[3];
+const critItensQ=()=>{const set=new Set();["sup","inf"].forEach(r=>balList(r).forEach(B=>qsOf(B.n,r).forEach(q=>set.add(q.it))));return set};
 function confCount(){const n={c:0,nc:0,pend:0,na:0,nv:0};["sup","inf"].forEach(r=>balList(r).forEach(B=>qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r);n[st]=(n[st]||0)+1})));return n}
 function reportHTML(){
   const R=calc(),P=S.proj,miss=missing(),complete=miss.length===0,N=confCount();
@@ -1373,20 +1376,20 @@ function reportHTML(){
   h+=complete?'<div class="g-verdict ok">Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens 6.5.1 a 6.5.10.</div>'
    :'<div class="g-verdict"><b>Relatório incompleto.</b> A inspeção ainda não foi concluída. Falta concluir<ul>'+miss.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul></div>';
   ["sup","inf"].forEach((r,k)=>{
+    const vis_={};
     h+='<h2 class="g-h2"><span>'+(1+k)+'</span>'+RESC[r]+'</h2><div class="tbl-wrap"><table class="g-t g-chk"><thead><tr><th>Item</th><th>Verificação</th><th>Resposta</th><th>Situação</th></tr></thead><tbody>';
     balList(r).forEach(B=>{
       h+='<tr class="g-grp"><td colspan="4">Balão '+B.n+', '+esc(bNome(B,r))+(vis(B.n,r)==="ok"?' <small>(concluído)</small>':'')+'</td></tr>';
       qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];
-        h+='<tr><td class="n">'+q.it+'</td><td>'+esc(tx(q,r))+'</td><td>'+(st==="na"?"—":esc(v==null?"—":v))+'</td><td class="n">'+(stCls[st]?'<span class="g-st '+stCls[st]+'">'+stLbl[st]+'</span>':'<span class="g-mute">'+stLbl[st]+'</span>')+'</td></tr>'});
+        h+='<tr><td class="n">'+q.it+'</td><td>'+esc(tx(q,r))+'</td><td>'+(st==="na"?"—":esc(v==null?"—":v))+'</td><td class="n">'+(stCls[st]?'<span class="g-st '+stCls[st]+'">'+stLbl[st]+'</span>':'<span class="g-mute">'+stLbl[st]+'</span>')+'</td></tr>';
+        if(!vis_[q.it]){vis_[q.it]=1;CRITICA.filter(c=>c[0]===q.it).forEach(c=>{h+='<tr class="g-obs"><td class="n">Obs.</td><td colspan="3">'+esc(critTxt(c))+'</td></tr>'})}});
       const ob=S.obs[r][B.n];if(ob)h+='<tr><td class="n">Obs.</td><td colspan="3">'+esc(ob)+'</td></tr>';
     });
     const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
       h+='<tr><td class="n">6.5.6.1</td><td colspan="3">Interrupções registradas: '+fmt(it.freq||0,1)+' por mês, duração média de '+fmt(it.dmed||0,1)+' h e maior duração de '+fmt(it.dmax||0,1)+' h'+(it.fonte?" (fonte: "+esc(it.fonte)+")":"")+'. Autonomia adotada de '+fmt(R.autH,0)+' h.</td></tr>';
+    if(r==="sup"){const iq=critItensQ();CRITICA.filter(c=>!iq.has(c[0])).forEach(c=>{h+='<tr class="g-obs"><td class="n">'+c[0]+'</td><td colspan="3">'+esc(critTxt(c))+'</td></tr>'})}
     h+='</tbody></table></div>';
   });
-  h+='<h2 class="g-h2"><span>3</span>Análise crítica da NBR 5626:2020</h2><p class="g-intro">Lacunas identificadas no texto da norma e propostas de redação elaboradas no TCC (seções 5.1 e 5.2). As propostas são recomendações complementares e não substituem a redação vigente.</p>'+
-   '<div class="tbl-wrap"><table class="g-t g-crit"><thead><tr><th>Item</th><th>Lacuna na norma</th><th>Proposta</th></tr></thead><tbody>'+
-   CRITICA.map(c=>'<tr><td class="n"><b>'+c[0]+'</b></td><td><b>'+esc(c[1])+'.</b> '+esc(c[2])+'</td><td>'+esc(c[3])+'</td></tr>').join("")+'</tbody></table></div>';
   h+='<p class="g-foot">Os resultados de volumes, diâmetros e do conjunto motobomba estão no relatório de dimensionamento. As referências estão no memorial de cálculo.</p>'+
    '<div class="sign"><div>Jean de Queiroz Macedo<br>Aluno IFCE - mat. 20232015050122</div><div>Técnico Responsável</div></div>';
   return h;
@@ -1419,19 +1422,18 @@ function reportPDF(){
   if(miss.length){miss.forEach(m=>para(doc,"• "+m.txt,{size:9,x:18,w:176,after:.5,color:[50,50,50]}));doc.__y+=3}
   ["sup","inf"].forEach((r,k)=>{
     sec(1+k,RESC[r]);
-    const body=[];
+    const body=[],vis_={},OBS={textColor:[29,78,216],fontStyle:"italic"};
     balList(r).forEach(B=>{body.push([{content:"Balão "+B.n+", "+bNome(B,r)+(vis(B.n,r)==="ok"?" (concluído)":""),colSpan:4,styles:{fillColor:[214,214,214],fontStyle:"bold",textColor:[25,25,25]}}]);
       qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r),v=S.ans[r][q.id];
         const sty=st==="c"?{fillColor:[224,224,224],textColor:[25,25,25],fontStyle:"bold"}:st==="nc"?{fillColor:[26,26,26],textColor:255,fontStyle:"bold"}:st==="pend"?{fillColor:[150,150,150],textColor:255,fontStyle:"bold"}:{textColor:[110,110,110]};
-        body.push([q.it,tx(q,r),st==="na"?"—":(v==null?"—":String(v)),{content:stLbl[st],styles:sty}])});
+        body.push([q.it,tx(q,r),st==="na"?"—":(v==null?"—":String(v)),{content:stLbl[st],styles:sty}]);
+        if(!vis_[q.it]){vis_[q.it]=1;CRITICA.filter(c=>c[0]===q.it).forEach(c=>body.push([{content:"Obs.",styles:OBS},{content:critTxt(c),colSpan:3,styles:OBS}]))}});
       const ob=S.obs[r][B.n];if(ob)body.push(["Obs.",{content:ob,colSpan:3}])});
     const it=S.inter[r];if(S.ans[r].q45==="Sim"&&it&&(it.dmax||it.dmed||it.freq))
       body.push(["6.5.6.1",{content:"Interrupções: "+fmt(it.freq||0,1)+" por mês, média de "+fmt(it.dmed||0,1)+" h, maior de "+fmt(it.dmax||0,1)+" h"+(it.fonte?", fonte "+it.fonte:"")+". Autonomia adotada de "+fmt(R.autH,0)+" h.",colSpan:3}]);
+    if(r==="sup"){const iq=critItensQ();CRITICA.filter(c=>!iq.has(c[0])).forEach(c=>body.push([{content:c[0],styles:OBS},{content:critTxt(c),colSpan:3,styles:OBS}]))}
     tbl(["Item","Verificação","Resposta","Situação"],body,{columnStyles:{0:{cellWidth:20},2:{cellWidth:26},3:{cellWidth:27}}});
   });
-  sec(3,"Análise crítica da NBR 5626:2020");
-  para(doc,"Lacunas identificadas no texto da norma e propostas de redação elaboradas no TCC (seções 5.1 e 5.2). As propostas são recomendações complementares e não substituem a redação vigente.",{size:9,color:[60,60,60]});
-  tbl(["Item","Lacuna na norma","Proposta"],CRITICA.map(c=>[c[0],c[1]+". "+c[2],c[3]]),{styles:Object.assign({},G.styles,{fontSize:8}),columnStyles:{0:{cellWidth:17,fontStyle:"bold"},1:{cellWidth:55}}});
   para(doc,"Os resultados de volumes, diâmetros e do conjunto motobomba estão no relatório de dimensionamento. As referências estão no memorial de cálculo.",{size:8.5,color:[90,90,90]});
   if(doc.__y>255){doc.addPage();doc.__y=30}doc.__y+=18;doc.setDrawColor(40);doc.setLineWidth(.2);doc.line(20,doc.__y,95,doc.__y);doc.line(115,doc.__y,190,doc.__y);
   doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(25);doc.text(pdfTxt("Jean de Queiroz Macedo"),57.5,doc.__y+5,{align:"center"});doc.text(pdfTxt("Aluno IFCE - mat. 20232015050122"),57.5,doc.__y+9.5,{align:"center"});doc.text(pdfTxt("Técnico Responsável"),152.5,doc.__y+5,{align:"center"});

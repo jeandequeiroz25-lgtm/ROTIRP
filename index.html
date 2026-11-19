@@ -310,7 +310,7 @@ input.vel{width:78px;text-align:right}
 .paper.gray .g-chk .g-grp td{background:#d6d6d6;font-weight:700;color:#111}.paper.gray .g-chk .g-grp small{font-weight:500;color:#444}
 .paper.gray .g-chk tbody tr:nth-child(even):not(.g-grp){background:#f6f6f6}
 .paper.gray .g-mute{color:#777;font-size:12.5px}
-.g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}.uq-bar{margin:14px 0 6px;padding:8px 16px}.pill,.pill.ok,.pill.bad,.pill.warn{background:none;padding:0;border-radius:0;display:inline;color:#ef4444}.pill.ok{color:#22b55a}.uq-bar .f{border:0;margin:0}
+.g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}.uq-bar{margin:14px 0 6px;padding:8px 16px}.pill,.pill.ok,.pill.bad,.pill.warn{background:none;padding:0;border-radius:0;display:inline;color:#ef4444}.pill.ok{color:#22b55a}.paper.gray .g-intro{font-size:13.5px;color:#4a4a4a;margin:0 0 8px}.paper.gray .g-crit td{font-size:13px;line-height:1.45}.uq-bar .f{border:0;margin:0}
 </style>
 
 <header class="top">
@@ -1331,6 +1331,33 @@ function table(doc,headR,body,extra={}){doc.autoTable(Object.assign({head:headR?
   styles:{font:"helvetica",fontSize:8.5,cellPadding:1.6,textColor:[27,43,50],lineColor:[205,217,221],lineWidth:.1},headStyles:{fillColor:[29,63,79],textColor:255},theme:"grid"},extra));doc.__y=doc.lastAutoTable.finalY+5}
 function footer(doc){const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(120);doc.text(pdfTxt(S.proj.nome+" · NBR 5626:2020 · página "+i+" de "+n),15,290)}}
 function slug(s){return (s||"projeto").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}
+/* ============ ANÁLISE CRÍTICA DA NBR 5626:2020 (propostas do TCC, seções 5.1 e 5.2) ============ */
+const CRITICA=[
+ ["6.5.5.1","Proteção sanitária: opacidade e controle de biofilme","A norma exige só a opacidade e não trata de recursos complementares de controle do biofilme, como a radiação UV-C.",
+  "6.5.5.1.1 Sistemas de radiação ultravioleta germicida (UV-C) podem ser utilizados como medida complementar na desinfecção dos reservatórios, desde que instalados de modo a não expor à radiação materiais suscetíveis à degradação. A adoção desses sistemas não dispensa o atendimento aos itens 6.5.5.1 e 6.5.6.3."],
+ ["6.5.10.3","Espaço em torno do reservatório","O espaço deve ser \"suficiente\", sem valor mínimo, o que deixa o afastamento a critério de cada projetista.",
+  "6.5.10.3 O espaço a prever em torno do reservatório deve ser suficiente para permitir a realização das atividades de verificação e manutenção, garantindo a movimentação segura da pessoa encarregada de executá-las, não podendo o afastamento entre as faces externas do reservatório e as superfícies que o circundam ser inferior a 60 cm nos locais onde houver necessidade de circulação, verificação e manutenção."],
+ ["6.5.5.2","Constatação visual e reparo de vazamentos","Exige a constatação de vazamentos em todas as faces, mas não prevê espaço sob o fundo do reservatório inferior.",
+  "6.5.5.2 O reservatório deve permitir a constatação visual e o reparo de vazamentos em todas as suas faces, inclusive no fundo, e impossibilitar a contaminação da água potável por qualquer agente externo. Os reservatórios inferiores não podem ser apoiados diretamente no solo nem encostados no terreno lateral, devendo ser prevista altura livre mínima de 2,10 m entre o fundo do reservatório e o piso sob ele, além de afastamento mínimo de 60 cm em torno das paredes, conforme 6.5.10.3."],
+ ["6.5.5.3","Vedação da tampa de acesso","Exige tampa \"firmemente presa\", sem dizer como garantir a estanqueidade do fechamento.",
+  "6.5.5.3 O reservatório deve ser um recipiente estanque, com tampa ou abertura com porta de acesso opaca, firmemente presa na sua posição quando fechada. A abertura deve possuir ressalto perimetral de no mínimo 10 cm acima da superfície da cobertura, e a tampa deve ser assentada sobre argamassa de gesso ou de traço magro, de fácil remoção, que preencha as frestas entre as superfícies de contato, de modo a impedir o ingresso de insetos, água e outros agentes externos."],
+ ["6.5.10.2","Abertura de acesso para inspeção e limpeza","Exige abertura de \"dimensão suficiente\", sem valor mínimo.",
+  "6.5.10.2 O interior do reservatório deve ser facilmente acessível para verificação e limpeza, por meio de abertura com dimensão mínima de 60 cm em qualquer direção."],
+ ["6.5.6.3","Volume armazenado e ação residual do desinfetante","O limite de três dias de consumo da nota é só alternativa e não considera o consumo efetivo nem o clima local.",
+  "NOTA 2 Recomenda-se que o volume armazenado seja determinado com base no consumo efetivo da edificação, considerando as condições climáticas locais."],
+ ["6.5.6.8","Compartimentos operando como vasos comunicantes","A Errata 1 retirou a proibição do item 6.5.6.5, mas ela continua no 6.5.6.8, e a norma não define a expressão.",
+  "6.5.6.8 Em caso de câmara formada pela interligação de vários reservatórios, deve ser assegurada a renovação e a circulação da água por todos eles. A interligação deve ser dotada de registros de fechamento que permitam isolar qualquer reservatório sem interromper o abastecimento dos demais pontos de utilização, nem o fornecimento de água para o edifício."],
+ ["6.5.6.5","Tempo estimado para a operação de manutenção","Não define a duração de uma operação normal de manutenção, usada para dimensionar o menor compartimento.",
+  "6.5.6.5 À exceção das residências unifamiliares isoladas, os demais reservatórios elevados devem ser divididos em dois ou mais compartimentos para permitir operações de manutenção, sem que haja interrupção na distribuição de água para os pontos de utilização do edifício. A capacidade do menor dos compartimentos deve ser suficiente para atender à demanda correspondente ao maior período de pico de consumo do edifício durante um período de 12 horas, correspondente à duração estimada de uma operação normal de manutenção. Neste caso, cada compartimento deve possuir entrada de água própria, derivada do alimentador predial e dotada de componente de controle automático de admissão, sendo permitida a interligação entre compartimentos desde que dotada de registros de fechamento dispostos de modo que qualquer compartimento possa ser isolado sem interromper o abastecimento dos pontos de utilização."],
+ ["6.5.9.4","Diâmetro da tubulação de extravasão","Exige diâmetro \"suficiente\" para o escoamento livre, sem valor de referência nem método.",
+  "Diâmetro mínimo do extravasor: uma bitola comercial imediatamente superior à da entrada de água (Tabela 1 do TCC, com base em Carvalho Júnior, 2023, p. 41)."],
+ ["6.5.9.4","Bloqueio do extravasor por partículas flutuantes","Exige impossibilitar o bloqueio, mas aumentar o diâmetro só reduz o risco.",
+  "NOTA Para impossibilitar o bloqueio por partículas flutuantes, recomenda-se que a captação da água pela tubulação de extravasão seja feita abaixo do nível de extravasão, por meio de tê com ramal de ventilação voltado para cima."],
+ ["6.5.9.6","Tela nas extremidades abertas","Prevê telas nas saídas do extravasor e do aviso, mas não indica a abertura máxima da malha.",
+  "Proteger as extremidades abertas com tela plástica fina, de no máximo 0,5 mm de espaçamento (Botelho e Ribeiro Júnior, 2014, p. 35), resistente à corrosão e à radiação solar, e verificar o seu estado de conservação."],
+ ["6.6.2","Eliminação do ar no barrilete","Exige a eliminação do ar sem indicar como fazê-la no barrilete.",
+  "6.6.2.1 O barrilete alimentado por reservatório superior deve ser dotado de tubo de respiração, ligado por conexão tê a jusante do registro de fechamento da saída do reservatório, perpendicular ao trecho horizontal ou junto a uma mudança de direção. O tubo deve subir verticalmente até cota superior à do nível máximo da água no reservatório, não possuir registro e ser instalado externamente ao reservatório, com a extremidade aberta, voltada para baixo e protegida por tela. Este recurso não dispensa o atendimento ao item 6.15.2.4."]
+];
 /* ============ RELATÓRIO DE CONFORMIDADE (escala de cinza) ============ */
 const stCls={c:"g-ok",nc:"g-bad",pend:"g-warn"};
 function confCount(){const n={c:0,nc:0,pend:0,na:0,nv:0};["sup","inf"].forEach(r=>balList(r).forEach(B=>qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r);n[st]=(n[st]||0)+1})));return n}
@@ -1357,6 +1384,9 @@ function reportHTML(){
       h+='<tr><td class="n">6.5.6.1</td><td colspan="3">Interrupções registradas: '+fmt(it.freq||0,1)+' por mês, duração média de '+fmt(it.dmed||0,1)+' h e maior duração de '+fmt(it.dmax||0,1)+' h'+(it.fonte?" (fonte: "+esc(it.fonte)+")":"")+'. Autonomia adotada de '+fmt(R.autH,0)+' h.</td></tr>';
     h+='</tbody></table></div>';
   });
+  h+='<h2 class="g-h2"><span>3</span>Análise crítica da NBR 5626:2020</h2><p class="g-intro">Lacunas identificadas no texto da norma e propostas de redação elaboradas no TCC (seções 5.1 e 5.2). As propostas são recomendações complementares e não substituem a redação vigente.</p>'+
+   '<div class="tbl-wrap"><table class="g-t g-crit"><thead><tr><th>Item</th><th>Lacuna na norma</th><th>Proposta</th></tr></thead><tbody>'+
+   CRITICA.map(c=>'<tr><td class="n"><b>'+c[0]+'</b></td><td><b>'+esc(c[1])+'.</b> '+esc(c[2])+'</td><td>'+esc(c[3])+'</td></tr>').join("")+'</tbody></table></div>';
   h+='<p class="g-foot">Os resultados de volumes, diâmetros e do conjunto motobomba estão no relatório de dimensionamento. As referências estão no memorial de cálculo.</p>'+
    '<div class="sign"><div>Jean de Queiroz Macedo<br>Aluno IFCE - mat. 20232015050122</div><div>Técnico Responsável</div></div>';
   return h;
@@ -1399,6 +1429,9 @@ function reportPDF(){
       body.push(["6.5.6.1",{content:"Interrupções: "+fmt(it.freq||0,1)+" por mês, média de "+fmt(it.dmed||0,1)+" h, maior de "+fmt(it.dmax||0,1)+" h"+(it.fonte?", fonte "+it.fonte:"")+". Autonomia adotada de "+fmt(R.autH,0)+" h.",colSpan:3}]);
     tbl(["Item","Verificação","Resposta","Situação"],body,{columnStyles:{0:{cellWidth:20},2:{cellWidth:26},3:{cellWidth:27}}});
   });
+  sec(3,"Análise crítica da NBR 5626:2020");
+  para(doc,"Lacunas identificadas no texto da norma e propostas de redação elaboradas no TCC (seções 5.1 e 5.2). As propostas são recomendações complementares e não substituem a redação vigente.",{size:9,color:[60,60,60]});
+  tbl(["Item","Lacuna na norma","Proposta"],CRITICA.map(c=>[c[0],c[1]+". "+c[2],c[3]]),{styles:Object.assign({},G.styles,{fontSize:8}),columnStyles:{0:{cellWidth:17,fontStyle:"bold"},1:{cellWidth:55}}});
   para(doc,"Os resultados de volumes, diâmetros e do conjunto motobomba estão no relatório de dimensionamento. As referências estão no memorial de cálculo.",{size:8.5,color:[90,90,90]});
   if(doc.__y>255){doc.addPage();doc.__y=30}doc.__y+=18;doc.setDrawColor(40);doc.setLineWidth(.2);doc.line(20,doc.__y,95,doc.__y);doc.line(115,doc.__y,190,doc.__y);
   doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(25);doc.text(pdfTxt("Jean de Queiroz Macedo"),57.5,doc.__y+5,{align:"center"});doc.text(pdfTxt("Aluno IFCE - mat. 20232015050122"),57.5,doc.__y+9.5,{align:"center"});doc.text(pdfTxt("Técnico Responsável"),152.5,doc.__y+5,{align:"center"});

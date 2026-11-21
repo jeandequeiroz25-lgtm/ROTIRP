@@ -312,28 +312,19 @@ input.vel{width:78px;text-align:right}
 .paper.gray .g-mute{color:#777;font-size:12.5px}
 .g-blank{border-bottom:1px solid #8a8a8a;min-height:1.4em;max-width:340px}.uq-bar{margin:14px 0 6px;padding:8px 16px}.pill,.pill.ok,.pill.bad,.pill.warn{background:none;padding:0;border-radius:0;display:inline;color:#ef4444}.pill.ok{color:#22b55a}.paper.gray .g-chk tr.g-obs td{color:#1d4ed8;font-style:italic;font-size:13px;line-height:1.45;background:#fff}.uq-bar .f{border:0;margin:0}
 .paper.gray .g-h3{font-size:15px;margin:20px 0 6px;color:#1a1a1a}
-.paper.gray .g-stk,.paper.gray .g-grpc{margin:6px 0 10px}
-.paper.gray .g-row{display:grid;grid-template-columns:200px 1fr;gap:4px 12px;align-items:center;margin:7px 0}
-.paper.gray .g-stk .g-lab{font-size:14px}.paper.gray .g-row.tot .g-lab{font-weight:700}
-.paper.gray .g-bar{display:flex;height:30px;border:1px solid #6b6b6b;background:#fff}
-.paper.gray .g-bar span{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border-right:1px solid #6b6b6b;overflow:hidden}
+.paper.gray .g-stk{margin:6px 0 4px}
+.paper.gray .g-row{display:grid;grid-template-columns:270px 1fr 96px;gap:4px 12px;align-items:center;margin:6px 0}
+.paper.gray .g-lab{font-size:13px;text-align:right}
+.paper.gray .g-bar{display:flex;height:24px;border:1px solid #6b6b6b;background:#fff}
+.paper.gray .g-bar span{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border-right:1px solid #6b6b6b;overflow:hidden}
 .paper.gray .g-bar span:last-child{border-right:0}
-.paper.gray .s-c{background:#a6a6a6;color:#111}.paper.gray .s-nc{background:#1a1a1a;color:#fff}.paper.gray .s-nv{background:#5e5e5e;color:#fff}.paper.gray .s-na{background:#fff;color:#111}
-.paper.gray .s-pend{background:repeating-linear-gradient(45deg,#e3e3e3 0 4px,#c4c4c4 4px 6px);color:#111}
-.paper.gray .g-leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:#333;margin:8px 0 0 212px}
+.paper.gray .s-c{background:#a6a6a6;color:#111}.paper.gray .s-nc{background:#1a1a1a;color:#fff}.paper.gray .s-nv{background:#5e5e5e;color:#fff}
+.paper.gray .g-leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:#333;margin:10px 0 0 282px}
 .paper.gray .g-leg span{display:flex;align-items:center;gap:6px}.paper.gray .g-leg i{width:13px;height:13px;border:1px solid #6b6b6b;display:inline-block}
-.paper.gray .g-grpc .g-row{grid-template-columns:270px 1fr 86px;margin:5px 0}
-.paper.gray .g-grpc .g-lab{font-size:13px;text-align:right}
-.paper.gray .g-ic{height:20px;background:#f0f0f0;background-image:linear-gradient(90deg,#d0d0d0 1px,transparent 1px);background-size:25% 100%}
-.paper.gray .g-ic span{display:block;height:100%;background:#404040}
-.paper.gray .g-val{font-size:13px;white-space:nowrap}.paper.gray .g-val small{color:#666}
+.paper.gray .g-val{font-size:12px;color:#666;white-space:nowrap}
 .paper.gray .g-none{font-size:12.5px;color:#777;font-style:italic}
-.paper.gray .g-axis{margin-bottom:0}.paper.gray .g-scale{display:flex;justify-content:space-between;font-size:11px;color:#666;margin:0 -6px}
-@media (max-width:700px){.paper.gray .g-row,.paper.gray .g-grpc .g-row{grid-template-columns:1fr auto}.paper.gray .g-row .g-lab{grid-column:1/-1;text-align:left}
- .paper.gray .g-stk .g-bar{grid-column:1/-1}.paper.gray .g-leg{margin-left:0}.paper.gray .g-axis .g-lab{display:none}
- .paper.gray .g-grpc .g-row{grid-template-columns:minmax(0,1fr) 76px}.paper.gray .g-grpc .g-ic,.paper.gray .g-grpc .g-none,.paper.gray .g-grpc .g-scale{grid-column:1;grid-row:2}.paper.gray .g-grpc .g-val{grid-column:2;grid-row:2}
- .paper.gray .g-grpc .g-axis .g-scale{grid-row:1}.paper.gray .g-grpc .g-axis .g-val{grid-row:1}}
-.paper.gray .g-stat td.n,.paper.gray .g-stat th.n{text-align:center}.paper.gray .g-stat tr.g-tot td{font-weight:700;background:#e2e2e2}
+@media (max-width:700px){.paper.gray .g-row{grid-template-columns:minmax(0,1fr) 84px}.paper.gray .g-lab{grid-column:1/-1;text-align:left}
+ .paper.gray .g-bar,.paper.gray .g-none{grid-column:1;grid-row:2}.paper.gray .g-val{grid-column:2;grid-row:2}.paper.gray .g-leg{margin-left:0}}
 </style>
 
 <header class="top">
@@ -1386,84 +1377,65 @@ const stCls={c:"g-ok",nc:"g-bad",pend:"g-warn"};
 const critTxt=c=>"Análise crítica (TCC): "+c[2]+" Proposta: "+c[3];
 const critItensQ=()=>{const set=new Set();["sup","inf"].forEach(r=>balList(r).forEach(B=>qsOf(B.n,r).forEach(q=>set.add(q.it))));return set};
 function confCount(){const n={c:0,nc:0,pend:0,na:0,nv:0};["sup","inf"].forEach(r=>balList(r).forEach(B=>qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r);n[st]=(n[st]||0)+1})));return n}
-/* ---------- indicadores e gráficos de conformidade ---------- */
-const GRPN={"6.5.1 a 6.5.4":"Abastecimento, alimentador e consumo","6.5.5":"Proteção sanitária","6.5.6":"Forma e capacidade","6.5.7":"Instalação e estabilidade","6.5.8":"Previsão da operação","6.5.9":"Limpeza, extravasão e aviso","6.5.10":"Inspeção e manutenção","6.6.2":"Eliminação do ar","6.7.2":"Alimentador predial"};
+/* ---------- gráficos de conformidade (C, NC, NV) ---------- */
+const GRPN={"6.5.1 a 6.5.4":"Abastecimento e consumo","6.5.5":"Proteção sanitária","6.5.6":"Forma e capacidade","6.5.7":"Instalação e estabilidade","6.5.8":"Previsão da operação","6.5.9":"Limpeza, extravasão e aviso","6.5.10":"Inspeção e manutenção","6.6.2":"Eliminação do ar","6.7.2":"Alimentador predial"};
 const grpOf=it=>{const p=it.split(".");if(p[0]==="6"&&p[1]==="5"&&+p[2]<=4)return"6.5.1 a 6.5.4";return p.slice(0,3).join(".")};
 const zst=()=>({c:0,nc:0,nv:0,na:0,pend:0});
-const icOf=o=>o.c+o.nc?o.c/(o.c+o.nc)*100:null;
-const icTxt=o=>{const v=icOf(o);return v==null?"—":fmt(v,1)+"%"};
-const totOf=o=>o.c+o.nc+o.nv+o.na+o.pend;
-const STK=[["c","Conforme","#a6a6a6",[166,166,166]],["nc","Não conforme","#1a1a1a",[26,26,26]],["nv","Não verificável","#5e5e5e",[94,94,94]],["na","Não se aplica","#ffffff",[255,255,255]],["pend","Sem resposta","#e3e3e3",[227,227,227]]];
+const STK=[["c","Conforme",[166,166,166]],["nc","Não conforme",[26,26,26]],["nv","Não verificável",[94,94,94]]];
+const evOf=o=>o.c+o.nc+o.nv;
+const pct=(v,t)=>t?Math.round(v/t*100):0;
 function confStats(){
   const R={sup:zst(),inf:zst(),tot:zst()},G={};
   ["sup","inf"].forEach(r=>balList(r).forEach(B=>qsOf(B.n,r).forEach(q=>{const st=status(S.ans[r],q,r);R[r][st]++;R.tot[st]++;const g=grpOf(q.it);(G[g]=G[g]||zst())[st]++})));
   const key=g=>g.split(" ")[0].split(".").map(Number);
-  const grp=Object.keys(G).sort((a,b)=>{const x=key(a),y=key(b);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]-y[i];return 0}).map(g=>({g,n:GRPN[g]||"",o:G[g]}));
-  return {R,grp};
+  const grp=Object.keys(G).sort((a,b)=>{const x=key(a),y=key(b);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]-y[i];return 0}).map(g=>({k:g,lab:'<b>'+g+'</b> '+esc(GRPN[g]||""),txt:[g,GRPN[g]||""],o:G[g]}));
+  const res=[["sup","Reservatório superior"],["inf","Reservatório inferior"],["tot","Total"]].map(([k,n])=>({k,lab:k==="tot"?'<b>'+n+'</b>':n,txt:[n,""],bold:k==="tot",o:R[k]}));
+  return {R,res,grp};
 }
-const ROWN=[["sup","Reservatório superior"],["inf","Reservatório inferior"],["tot","Total"]];
-function stackSVG(R){
+function barsHTML(rows){
   let h='<div class="g-stk">';
-  ROWN.forEach(([k,n])=>{const o=R[k],t=totOf(o)||1;
-    h+='<div class="g-row'+(k==="tot"?' tot':'')+'"><div class="g-lab">'+n+'</div><div class="g-bar">'+
-      STK.filter(x=>o[x[0]]).map(([s,nm])=>'<span class="s-'+s+'" style="width:'+(o[s]/t*100).toFixed(2)+'%" title="'+nm+': '+o[s]+'">'+(o[s]/t>=.04?o[s]:'')+'</span>').join("")+'</div></div>'});
-  return h+'<div class="g-leg">'+STK.map(([s,n])=>'<span><i class="s-'+s+'"></i>'+n+'</span>').join("")+'</div></div>';
-}
-function grpSVG(grp){
-  let h='<div class="g-grpc"><div class="g-row g-axis"><div class="g-lab"></div><div class="g-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div><div class="g-val"></div></div>';
-  grp.forEach(g=>{const v=icOf(g.o);
-    h+='<div class="g-row"><div class="g-lab"><b>'+g.g+'</b> '+esc(g.n)+'</div>'+(v==null?'<div class="g-none">sem itens avaliados</div><div class="g-val"></div>':
-      '<div class="g-ic"><span style="width:'+v.toFixed(2)+'%"></span></div><div class="g-val"><b>'+fmt(v,0)+'%</b> <small>'+g.o.c+'/'+(g.o.c+g.o.nc)+'</small></div>')+'</div>'});
+  rows.forEach(r=>{const o=r.o,t=evOf(o);
+    h+='<div class="g-row"><div class="g-lab">'+r.lab+'</div>'+(t?'<div class="g-bar">'+
+      STK.filter(x=>o[x[0]]).map(([s,nm])=>{const p=o[s]/t*100;return'<span class="s-'+s+'" style="width:'+p.toFixed(2)+'%" title="'+nm+': '+o[s]+'">'+(p>=9?Math.round(p)+'%':'')+'</span>'}).join("")+
+      '</div><div class="g-val">'+t+(t===1?' resposta':' respostas')+'</div>':'<div class="g-none">sem respostas avaliadas</div><div class="g-val"></div>')+'</div>'});
   return h+'</div>';
 }
+const legHTML=()=>'<div class="g-leg">'+STK.map(([s,n])=>'<span><i class="s-'+s+'"></i>'+n+'</span>').join("")+'</div>';
 function statsHTML(){
-  const {R,grp}=confStats();
-  let h='<h2 class="g-h2"><span>1</span>Indicadores de conformidade</h2>'+
-   '<div class="g-nums"><div><b>'+icTxt(R.tot)+'</b><span>índice de conformidade geral</span></div><div><b>'+icTxt(R.sup)+'</b><span>índice no reservatório superior</span></div>'+
-   '<div><b>'+icTxt(R.inf)+'</b><span>índice no reservatório inferior</span></div><div><b>'+R.tot.nc+'</b><span>respostas não conformes</span></div></div>'+
-   '<div class="tbl-wrap"><table class="g-t g-stat"><thead><tr><th>Reservatório</th>'+STK.map(x=>'<th class="n">'+x[1]+'</th>').join("")+'<th class="n">Total</th><th class="n">IC</th></tr></thead><tbody>'+
-   ROWN.map(([k,n])=>'<tr'+(k==="tot"?' class="g-tot"':'')+'><td>'+n+'</td>'+STK.map(x=>'<td class="n">'+R[k][x[0]]+'</td>').join("")+'<td class="n">'+totOf(R[k])+'</td><td class="n"><b>'+icTxt(R[k])+'</b></td></tr>').join("")+'</tbody></table></div>'+
-   '<h3 class="g-h3">Distribuição das respostas por situação</h3>'+stackSVG(R)+
-   '<h3 class="g-h3">Índice de conformidade por grupo de itens da NBR 5626:2020</h3>'+grpSVG(grp)+
-   '<p class="g-foot">IC = C ÷ (C + NC) × 100, em que C é o número de respostas conformes e NC o de não conformes. Respostas não verificáveis, itens que não se aplicam e perguntas sem resposta não entram no cálculo. Ao lado de cada barra, a fração de itens conformes entre os avaliados.</p>';
-  return h;
+  const {res,grp}=confStats();
+  return '<h2 class="g-h2"><span>1</span>Gráficos de conformidade</h2>'+
+   '<h3 class="g-h3">Respostas por reservatório</h3>'+barsHTML(res)+
+   '<h3 class="g-h3">Respostas por grupo de itens da NBR 5626:2020</h3>'+barsHTML(grp)+legHTML()+
+   '<p class="g-foot">Percentuais calculados sobre as respostas conformes, não conformes e não verificáveis. Itens que não se aplicam e perguntas sem resposta não entram nos gráficos.</p>';
 }
 function statsPDF(doc,tbl,sec){
-  const {R,grp}=confStats();
-  sec(1,"Indicadores de conformidade");
-  const nums=[[icTxt(R.tot),"índice de conformidade geral"],[icTxt(R.sup),"índice no reservatório superior"],[icTxt(R.inf),"índice no reservatório inferior"],[String(R.tot.nc),"respostas não conformes"]];
-  nums.forEach((n,i)=>{const x=15+i*45.5;doc.setFillColor(i%2?236:226);doc.rect(x,doc.__y,43.5,16,"F");doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(25);doc.text(pdfTxt(n[0]),x+3,doc.__y+7.5);
-    doc.setFont("helvetica","normal");doc.setFontSize(7.8);doc.setTextColor(85);doc.text(pdfTxt(n[1]),x+3,doc.__y+12.8)});doc.__y+=20;
-  tbl(["Reservatório"].concat(STK.map(x=>x[1]),["Total","IC"]),ROWN.map(([k,n])=>[n].concat(STK.map(x=>String(R[k][x[0]])),[String(totOf(R[k])),icTxt(R[k])]).map(c=>k==="tot"?{content:c,styles:{fontStyle:"bold",fillColor:[226,226,226]}}:c)),
-    {columnStyles:{0:{cellWidth:38}},styles:{font:"helvetica",fontSize:8.2,cellPadding:1.6,halign:"center",textColor:[25,25,25],lineColor:[190,190,190],lineWidth:.1}});
+  const {res,grp}=confStats();
+  sec(1,"Gráficos de conformidade");
   const need=h=>{if(doc.__y+h>282){doc.addPage();doc.__y=18}};
-  const h3=t=>{need(10);doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(25);doc.text(pdfTxt(t),15,doc.__y+4);doc.__y+=8};
-  /* gráfico 1: barras empilhadas */
-  need(ROWN.length*11+22);h3("Distribuição das respostas por situação");
-  const L=55,BW=138;
-  ROWN.forEach(([k,n])=>{const o=R[k],t=totOf(o)||1;let x=L;const y=doc.__y;
-    doc.setFont("helvetica",k==="tot"?"bold":"normal");doc.setFontSize(8.8);doc.setTextColor(25);doc.text(pdfTxt(n),L-3,y+5,{align:"right"});
-    STK.forEach(([s,,,c])=>{const v=o[s];if(!v)return;const w=v/t*BW;doc.setFillColor(c[0],c[1],c[2]);doc.setDrawColor(107);doc.setLineWidth(.2);doc.rect(x,y,w,7.2,"FD");
-      if(w>=5){doc.setFont("helvetica","bold");doc.setFontSize(8);doc.setTextColor(s==="nc"||s==="nv"?255:25);doc.text(String(v),x+w/2,y+4.9,{align:"center"})}x+=w});
-    doc.__y+=10.5});
-  let lx=L;doc.setFontSize(7.8);doc.setFont("helvetica","normal");
-  STK.forEach(([s,n,,c])=>{doc.setFillColor(c[0],c[1],c[2]);doc.setDrawColor(107);doc.rect(lx,doc.__y,3.4,3.4,"FD");doc.setTextColor(60);doc.text(pdfTxt(n),lx+4.6,doc.__y+2.9);lx+=4.6+doc.getTextWidth(pdfTxt(n))+5});
-  doc.__y+=9;
-  /* gráfico 2: IC por grupo */
-  need(grp.length*7+20);h3("Índice de conformidade por grupo de itens da NBR 5626:2020");
-  const L2=88,BW2=82,top=doc.__y;
-  doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(110);
-  [0,25,50,75,100].forEach(p=>{const x=L2+p/100*BW2;doc.text(p+"%",x,top+1,{align:"center"});doc.setDrawColor(208);doc.setLineWidth(.2);doc.line(x,top+2.5,x,top+3+grp.length*7)});
-  doc.__y=top+3.5;
-  grp.forEach(g=>{const y=doc.__y,v=icOf(g.o);
-    doc.setFontSize(8.2);doc.setTextColor(25);doc.setFont("helvetica","bold");const lab=pdfTxt(g.g),lw=doc.getTextWidth(lab);doc.text(lab,15,y+3.9);
-    doc.setFont("helvetica","normal");doc.text(pdfTxt(g.n),15+lw+1.8,y+3.9);
-    if(v==null){doc.setTextColor(120);doc.setFont("helvetica","italic");doc.text("sem itens avaliados",L2+1.5,y+3.9);doc.setFont("helvetica","normal")}
-    else{doc.setFillColor(240,240,240);doc.rect(L2,y,BW2,5.2,"F");doc.setFillColor(64,64,64);doc.rect(L2,y,v/100*BW2,5.2,"F");
-      doc.setFont("helvetica","bold");doc.setTextColor(25);doc.text(fmt(v,0)+"%",L2+BW2+2.5,y+3.9);doc.setFont("helvetica","normal");doc.setTextColor(110);doc.setFontSize(7.4);doc.text(g.o.c+"/"+(g.o.c+g.o.nc),L2+BW2+14,y+3.9)}
-    doc.__y+=7});
-  doc.__y+=2;
-  para(doc,"IC = C / (C + NC) x 100, em que C é o número de respostas conformes e NC o de não conformes. Respostas não verificáveis, itens que não se aplicam e perguntas sem resposta não entram no cálculo. Ao lado de cada barra, a fração de itens conformes entre os avaliados.",{size:8,color:[90,90,90]});
+  const L=72,BW=96,RH=6.2,GAP=8;
+  const chart=(title,rows)=>{
+    need(rows.length*GAP+12);
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(25);doc.text(pdfTxt(title),15,doc.__y+4);doc.__y+=8;
+    rows.forEach(r=>{const o=r.o,t=evOf(o),y=doc.__y;
+      doc.setFontSize(8.2);doc.setTextColor(25);
+      if(r.bold){doc.setFont("helvetica","bold");doc.text(pdfTxt(r.txt[0]),15,y+4.3)}
+      else{doc.setFont("helvetica","bold");const a=pdfTxt(r.txt[0]);const w=r.txt[1]?doc.getTextWidth(a):0;doc.setFont("helvetica",r.txt[1]?"bold":"normal");doc.text(a,15,y+4.3);
+        if(r.txt[1]){doc.setFont("helvetica","normal");doc.text(pdfTxt(r.txt[1]),15+w+1.8,y+4.3)}}
+      doc.setFont("helvetica","normal");
+      if(!t){doc.setTextColor(120);doc.setFont("helvetica","italic");doc.text("sem respostas avaliadas",L+1.5,y+4.3);doc.setFont("helvetica","normal");doc.__y+=GAP;return}
+      let x=L;
+      STK.forEach(([s,,c])=>{const v=o[s];if(!v)return;const p=v/t,w=p*BW;doc.setFillColor(c[0],c[1],c[2]);doc.setDrawColor(107);doc.setLineWidth(.2);doc.rect(x,y,w,RH,"FD");
+        if(p>=.09){doc.setFont("helvetica","bold");doc.setFontSize(7.6);doc.setTextColor(s==="c"?25:255);doc.text(Math.round(p*100)+"%",x+w/2,y+4.2,{align:"center"});doc.setFont("helvetica","normal")}x+=w});
+      doc.setFontSize(7.6);doc.setTextColor(100);doc.text(t+(t===1?" resposta":" respostas"),L+BW+2.5,y+4.3);
+      doc.__y+=GAP});
+    doc.__y+=2;
+  };
+  chart("Respostas por reservatório",res);
+  chart("Respostas por grupo de itens da NBR 5626:2020",grp);
+  need(12);let lx=L;doc.setFontSize(7.8);doc.setFont("helvetica","normal");
+  STK.forEach(([s,n,c])=>{doc.setFillColor(c[0],c[1],c[2]);doc.setDrawColor(107);doc.rect(lx,doc.__y,3.4,3.4,"FD");doc.setTextColor(60);doc.text(pdfTxt(n),lx+4.6,doc.__y+2.9);lx+=4.6+doc.getTextWidth(pdfTxt(n))+6});
+  doc.__y+=8;
+  para(doc,"Percentuais calculados sobre as respostas conformes, não conformes e não verificáveis. Itens que não se aplicam e perguntas sem resposta não entram nos gráficos.",{size:8,color:[90,90,90]});
 }
 function reportHTML(){
   const R=calc(),P=S.proj,miss=missing(),complete=miss.length===0,N=confCount();
@@ -1473,7 +1445,7 @@ function reportHTML(){
    '<dl class="g-meta"><dt>Projeto</dt><dd>'+esc(P.nome)+'</dd><dt>Endereço da obra</dt><dd>'+esc(P.endereco)+'</dd><dt>Cliente</dt><dd>'+esc(P.cliente)+'</dd><dt>Responsável técnico</dt><dd class="g-blank"></dd>'+
    '<dt>Data de conclusão da obra</dt><dd>'+(P.conclusao?new Date(P.conclusao+"T12:00:00").toLocaleDateString("pt-BR"):"")+'</dd><dt>Encarregado</dt><dd>'+esc(P.encarregado||"")+'</dd><dt>Data da inspeção</dt><dd>'+dt+'</dd></dl>'+
    '';
-  h+=complete?(N.nc===0?'<div class="g-verdict ok">Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens verificados.</div>':'<div class="g-verdict"><b>Inspeção concluída com não conformidades.</b> Foram encontradas '+N.nc+' respostas não conformes, com índice de conformidade geral de '+icTxt(confStats().R.tot)+'. Os itens estão indicados na verificação de cada reservatório.</div>')
+  h+=complete?(N.nc===0?'<div class="g-verdict ok">Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens verificados.</div>':'<div class="g-verdict"><b>Inspeção concluída com não conformidades.</b> Foram encontradas '+N.nc+' respostas não conformes. Os itens estão indicados na verificação de cada reservatório.</div>')
    :'<div class="g-verdict"><b>Relatório incompleto.</b> A inspeção ainda não foi concluída. Falta concluir<ul>'+miss.map(m=>'<li>'+esc(m.txt)+'</li>').join("")+'</ul></div>';
   h+=statsHTML();
   ["sup","inf"].forEach((r,k)=>{
@@ -1513,7 +1485,7 @@ function reportPDF(){
     {columnStyles:{0:{cellWidth:50,fontStyle:"bold",fillColor:[232,232,232]}},alternateRowStyles:{}});
   /* parecer: faixa cinza com barra escura à esquerda */
   doc.__y+=2;
-  const vt=miss.length?["RELATÓRIO INCOMPLETO","A inspeção ainda não foi concluída. Falta concluir os pontos abaixo."]:N.nc===0?["EM CONFORMIDADE","Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens verificados."]:["INSPEÇÃO CONCLUÍDA COM NÃO CONFORMIDADES","Foram encontradas "+N.nc+" respostas não conformes, com índice de conformidade geral de "+icTxt(confStats().R.tot)+". Os itens estão indicados na verificação de cada reservatório."];
+  const vt=miss.length?["RELATÓRIO INCOMPLETO","A inspeção ainda não foi concluída. Falta concluir os pontos abaixo."]:N.nc===0?["EM CONFORMIDADE","Os reservatórios superior e inferior estão em conformidade com a NBR 5626:2020 nos itens verificados."]:["INSPEÇÃO CONCLUÍDA COM NÃO CONFORMIDADES","Foram encontradas "+N.nc+" respostas não conformes. Os itens estão indicados na verificação de cada reservatório."];
   doc.setFont("helvetica","normal");doc.setFontSize(9.5);const vl=doc.splitTextToSize(pdfTxt(vt[1]),170),vh=9+vl.length*4.3;
   doc.setFillColor(236,236,236);doc.rect(15,doc.__y,180,vh,"F");doc.setFillColor(34,34,34);doc.rect(15,doc.__y,2.2,vh,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(25);doc.text(pdfTxt(vt[0]),21,doc.__y+6);

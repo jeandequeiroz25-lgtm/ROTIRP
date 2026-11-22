@@ -318,9 +318,9 @@ input.vel{width:78px;text-align:right}
 .paper.gray .g-bar{display:flex;height:24px;border:1px solid #6b6b6b;background:#fff}
 .paper.gray .g-bar span{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border-right:1px solid #6b6b6b;overflow:hidden}
 .paper.gray .g-bar span:last-child{border-right:0}
-.paper.gray .s-c{background:#d6d6d6}
-.paper.gray .s-nc{background:repeating-linear-gradient(-45deg,#1e1e1e 0 1.6px,#fff 1.6px 5px)}
-.paper.gray .s-nv{background:linear-gradient(90deg,#fff 3px,transparent 3px) 0 0/8px 100%,repeating-linear-gradient(0deg,#fff 0 2px,#333 2px 3.6px,#fff 3.6px 5px)}
+.paper.gray .s-c{background:#dcdcdc}
+.paper.gray .s-nc{background:repeating-linear-gradient(-45deg,#3a3a3a 0 3.2px,#6a6a6a 3.2px 4.6px)}
+.paper.gray .s-nv{background:linear-gradient(90deg,#9a9a9a 3px,transparent 3px) 0 0/8px 100%,repeating-linear-gradient(0deg,#9a9a9a 0 2.4px,#6e6e6e 2.4px 3.6px,#9a9a9a 3.6px 5px)}
 .paper.gray .g-bar em{font-style:normal;color:#111;padding:0 4px;line-height:16px;border-radius:3px}
 .paper.gray .s-nc em,.paper.gray .s-nv em{background:#fff;border:1px solid #777}
 .paper.gray .g-leg i{width:22px!important;height:14px!important}
@@ -1414,13 +1414,12 @@ function statsHTML(){
    '<p class="g-foot">Percentuais calculados sobre as respostas conformes, não conformes e não verificáveis. Itens que não se aplicam e perguntas sem resposta não entram nos gráficos.</p>';
 }
 function pdfFill(doc,s,x,y,w,h){
-  doc.setDrawColor(90);doc.setLineWidth(.2);
-  if(s==="c"){doc.setFillColor(214,214,214);doc.rect(x,y,w,h,"FD");return}
-  doc.setFillColor(255,255,255);doc.rect(x,y,w,h,"F");
-  if(s==="nc"){doc.setDrawColor(30);doc.setLineWidth(.32);const st=1.25;
+  doc.setLineWidth(.2);
+  if(s==="c"){doc.setFillColor(220,220,220);doc.setDrawColor(90);doc.rect(x,y,w,h,"FD");return}
+  if(s==="nc"){doc.setFillColor(58,58,58);doc.rect(x,y,w,h,"F");doc.setDrawColor(110);doc.setLineWidth(.3);const st=1.3;
     for(let d=-h;d<w;d+=st){let x1=x+d,y1=y+h,x2=x+d+h,y2=y;
       if(x1<x){y1-=x-x1;x1=x}if(x2>x+w){y2+=x2-(x+w);x2=x+w}if(x2>x1)doc.line(x1,y1,x2,y2)}}
-  else{doc.setDrawColor(50);doc.setLineWidth(.3);doc.setLineDashPattern([.9,.7],0);
+  else{doc.setFillColor(154,154,154);doc.rect(x,y,w,h,"F");doc.setDrawColor(100);doc.setLineWidth(.3);doc.setLineDashPattern([.9,.7],0);
     for(let k=y+.8;k<y+h-.2;k+=1.15)doc.line(x+.2,k,x+w-.2,k);doc.setLineDashPattern([],0)}
   doc.setDrawColor(90);doc.setLineWidth(.2);doc.rect(x,y,w,h,"S");
 }

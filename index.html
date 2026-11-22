@@ -318,7 +318,12 @@ input.vel{width:78px;text-align:right}
 .paper.gray .g-bar{display:flex;height:24px;border:1px solid #6b6b6b;background:#fff}
 .paper.gray .g-bar span{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border-right:1px solid #6b6b6b;overflow:hidden}
 .paper.gray .g-bar span:last-child{border-right:0}
-.paper.gray .s-c{background:#a6a6a6;color:#111}.paper.gray .s-nc{background:#1a1a1a;color:#fff}.paper.gray .s-nv{background:#5e5e5e;color:#fff}
+.paper.gray .s-c{background:#d6d6d6}
+.paper.gray .s-nc{background:repeating-linear-gradient(-45deg,#1e1e1e 0 1.6px,#fff 1.6px 5px)}
+.paper.gray .s-nv{background:linear-gradient(90deg,#fff 3px,transparent 3px) 0 0/8px 100%,repeating-linear-gradient(0deg,#fff 0 2px,#333 2px 3.6px,#fff 3.6px 5px)}
+.paper.gray .g-bar em{font-style:normal;color:#111;padding:0 4px;line-height:16px;border-radius:3px}
+.paper.gray .s-nc em,.paper.gray .s-nv em{background:#fff;border:1px solid #777}
+.paper.gray .g-leg i{width:22px!important;height:14px!important}
 .paper.gray .g-leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:#333;margin:10px 0 0 282px}
 .paper.gray .g-leg span{display:flex;align-items:center;gap:6px}.paper.gray .g-leg i{width:13px;height:13px;border:1px solid #6b6b6b;display:inline-block}
 .paper.gray .g-val{font-size:12px;color:#666;white-space:nowrap}
@@ -1396,7 +1401,7 @@ function barsHTML(rows){
   let h='<div class="g-stk">';
   rows.forEach(r=>{const o=r.o,t=evOf(o);
     h+='<div class="g-row"><div class="g-lab">'+r.lab+'</div>'+(t?'<div class="g-bar">'+
-      STK.filter(x=>o[x[0]]).map(([s,nm])=>{const p=o[s]/t*100;return'<span class="s-'+s+'" style="width:'+p.toFixed(2)+'%" title="'+nm+': '+o[s]+'">'+(p>=9?Math.round(p)+'%':'')+'</span>'}).join("")+
+      STK.filter(x=>o[x[0]]).map(([s,nm])=>{const p=o[s]/t*100;return'<span class="s-'+s+'" style="width:'+p.toFixed(2)+'%" title="'+nm+': '+o[s]+'">'+(p>=9?'<em>'+Math.round(p)+'%</em>':'')+'</span>'}).join("")+
       '</div><div class="g-val">'+t+(t===1?' resposta':' respostas')+'</div>':'<div class="g-none">sem respostas avaliadas</div><div class="g-val"></div>')+'</div>'});
   return h+'</div>';
 }
@@ -1407,6 +1412,17 @@ function statsHTML(){
    '<h3 class="g-h3">Respostas por reservatório</h3>'+barsHTML(res)+
    '<h3 class="g-h3">Respostas por grupo de itens da NBR 5626:2020</h3>'+barsHTML(grp)+legHTML()+
    '<p class="g-foot">Percentuais calculados sobre as respostas conformes, não conformes e não verificáveis. Itens que não se aplicam e perguntas sem resposta não entram nos gráficos.</p>';
+}
+function pdfFill(doc,s,x,y,w,h){
+  doc.setDrawColor(90);doc.setLineWidth(.2);
+  if(s==="c"){doc.setFillColor(214,214,214);doc.rect(x,y,w,h,"FD");return}
+  doc.setFillColor(255,255,255);doc.rect(x,y,w,h,"F");
+  if(s==="nc"){doc.setDrawColor(30);doc.setLineWidth(.32);const st=1.25;
+    for(let d=-h;d<w;d+=st){let x1=x+d,y1=y+h,x2=x+d+h,y2=y;
+      if(x1<x){y1-=x-x1;x1=x}if(x2>x+w){y2+=x2-(x+w);x2=x+w}if(x2>x1)doc.line(x1,y1,x2,y2)}}
+  else{doc.setDrawColor(50);doc.setLineWidth(.3);doc.setLineDashPattern([.9,.7],0);
+    for(let k=y+.8;k<y+h-.2;k+=1.15)doc.line(x+.2,k,x+w-.2,k);doc.setLineDashPattern([],0)}
+  doc.setDrawColor(90);doc.setLineWidth(.2);doc.rect(x,y,w,h,"S");
 }
 function statsPDF(doc,tbl,sec){
   const {res,grp}=confStats();
@@ -1424,8 +1440,10 @@ function statsPDF(doc,tbl,sec){
       doc.setFont("helvetica","normal");
       if(!t){doc.setTextColor(120);doc.setFont("helvetica","italic");doc.text("sem respostas avaliadas",L+1.5,y+4.3);doc.setFont("helvetica","normal");doc.__y+=GAP;return}
       let x=L;
-      STK.forEach(([s,,c])=>{const v=o[s];if(!v)return;const p=v/t,w=p*BW;doc.setFillColor(c[0],c[1],c[2]);doc.setDrawColor(107);doc.setLineWidth(.2);doc.rect(x,y,w,RH,"FD");
-        if(p>=.09){doc.setFont("helvetica","bold");doc.setFontSize(7.6);doc.setTextColor(s==="c"?25:255);doc.text(Math.round(p*100)+"%",x+w/2,y+4.2,{align:"center"});doc.setFont("helvetica","normal")}x+=w});
+      STK.forEach(([s,,c])=>{const v=o[s];if(!v)return;const p=v/t,w=p*BW;pdfFill(doc,s,x,y,w,RH);
+        if(p>=.09){doc.setFont("helvetica","bold");doc.setFontSize(7.6);const lb=Math.round(p*100)+"%",lw=doc.getTextWidth(lb)+1.8;
+          if(s!=="c"){doc.setFillColor(255,255,255);doc.setDrawColor(90);doc.setLineWidth(.15);doc.rect(x+w/2-lw/2,y+1.2,lw,3.9,"FD")}
+          doc.setTextColor(20);doc.text(lb,x+w/2,y+4.2,{align:"center"});doc.setFont("helvetica","normal")}x+=w});
       doc.setFontSize(7.6);doc.setTextColor(100);doc.text(t+(t===1?" resposta":" respostas"),L+BW+2.5,y+4.3);
       doc.__y+=GAP});
     doc.__y+=2;
@@ -1433,7 +1451,7 @@ function statsPDF(doc,tbl,sec){
   chart("Respostas por reservatório",res);
   chart("Respostas por grupo de itens da NBR 5626:2020",grp);
   need(12);let lx=L;doc.setFontSize(7.8);doc.setFont("helvetica","normal");
-  STK.forEach(([s,n,c])=>{doc.setFillColor(c[0],c[1],c[2]);doc.setDrawColor(107);doc.rect(lx,doc.__y,3.4,3.4,"FD");doc.setTextColor(60);doc.text(pdfTxt(n),lx+4.6,doc.__y+2.9);lx+=4.6+doc.getTextWidth(pdfTxt(n))+6});
+  STK.forEach(([s,n,c])=>{pdfFill(doc,s,lx,doc.__y-.3,5.2,4);doc.setTextColor(60);doc.text(pdfTxt(n),lx+6.6,doc.__y+2.9);lx+=6.6+doc.getTextWidth(pdfTxt(n))+7});
   doc.__y+=8;
   para(doc,"Percentuais calculados sobre as respostas conformes, não conformes e não verificáveis. Itens que não se aplicam e perguntas sem resposta não entram nos gráficos.",{size:8,color:[90,90,90]});
 }
